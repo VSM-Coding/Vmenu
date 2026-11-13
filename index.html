@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мой Рецептник</title>
+    <style>
+        :root {
+            --primary: #ff6b6b;
+            --primary-hover: #fa5252;
+            --bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --text: #343a40;
+            --border: #dee2e6;
+            --success: #51cf66;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
+        body { background-color: var(--bg); color: var(--text); padding-bottom: 70px; }
+
+        /* Навигация */
+        nav { background: var(--card-bg); padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; display: flex; justify-content: center; gap: 20px; }
+        nav button { background: none; border: none; font-size: 16px; font-weight: bold; color: #868e96; cursor: pointer; padding: 5px 10px; border-bottom: 3px solid transparent; transition: 0.3s; }
+        nav button.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
+
+        /* Основной контейнер */
+        .container { max-width: 800px; margin: 20px auto; padding: 0 15px; display: none; }
+        .container.active { display: block; }
+
+        /* Кнопки */
+        .btn { background: var(--primary); color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-size: 15px; transition: 0.2s; }
+        .btn:hover { background: var(--primary-hover); }
+        .btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); }
+        .btn-small { padding: 5px 10px; font-size: 13px; }
+
+        /* Карточки рецептов */
+        .recipe-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; margin-top: 20px; }
+        .recipe-card { background: var(--card-bg); padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); cursor: pointer; transition: transform 0.2s; border: 1px solid var(--border); }
+        .recipe-card:hover { transform: translateY(-3px); }
+        .recipe-card h3 { margin-bottom: 10px; }
+        
+        /* План на неделю */
+        .week-grid { display: grid; gap: 15px; margin-top: 20px; }
+        .day-card { background: var(--card-bg); padding: 15px; border-radius: 12px; border: 1px solid var(--border); }
+        .day-title { font-weight: bold; font-size: 18px; margin-bottom: 10px; color: var(--primary); border-bottom: 1px solid var(--border); padding-bottom: 5px; }
+        .meal-slot { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .meal-slot select { padding: 8px; border-radius: 6px; border: 1px solid var(--border); width: 65%; font-size: 14px; }
+
+        /* Режим готовки (Таймеры) */
+        .cooking-view { background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border); }
+        .step-item { border-left: 4px solid var(--primary); padding-left: 15px; margin-bottom: 20px; }
+        .timer-box { display: flex; align-items: center; gap: 15px; margin-top: 10px; background: var(--bg); padding: 10px; border-radius: 8px; }
+        .time-display { font-size: 20px; font-weight: bold; font-family: monospace; min-width: 70px; }
+        
+        /* Модальное окно (Добавление рецепта) */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal { background: var(--card-bg); padding: 20px; border-radius: 12px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
+        .form-group { margin-bottom: 15px; }
+        .form-group input, .form-group textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 15px; }
+        .dynamic-list-item { display: flex; gap: 10px; margin-bottom: 10px; }
+        .dynamic-list-item input { flex: 1; }
+        .dynamic-list-item input[type="number"] { max-width: 100px; }
+
+    </style>
+</head>
+<body>
+
+    <!-- Навигация -->
+    <nav>
+        <button class="active" onclick="switchTab('recipes')">Рецепты</button>
+        <button onclick="switchTab('plan')">План на неделю</button>
+        <button onclick="switchTab('cook')" id="nav-cook" style="display:none;">Готовка</button>
+    </nav>
+
+    <!-- Вкладка: Мои Рецепты -->
+    <div id="recipes-tab" class="container active">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2>Моя книга</h2>
+            <button class="btn" onclick="openModal()">+ Создать</button>
+        </div>
+        <div id="recipe-list" class="recipe-grid">
+            <!-- Рецепты рендерятся здесь -->
+        </div>
+    </div>
+
+    <!-- Вкладка: План на неделю -->
+    <div id="plan-tab" class="container">
+        <h2>Меню на неделю</h2>
+        <div id="week-list" class="week-grid">
+            <!-- Дни недели рендерятся здесь -->
+        </div>
+    </div>
+
+    <!-- Вкладка: Режим готовки -->
+    <div id="cook-tab" class="container">
+        <div id="cook-view" class="cooking-view">
+            <!-- Интерфейс готовки рендерится здесь -->
+        </div>
+    </div>
+
+    <!-- Модальное окно создания рецепта -->
+    <div id="recipe-modal" class="modal-overlay">
+        <div class="modal">
+            <h2 style="margin-bottom: 15px;">Новый рецепт</h2>
+            <div class="form-group">
+                <input type="text" id="r-name" placeholder="Название блюда (например, Паста Карбонара)" required>
+            </div>
+            
+            <div class="form-group">
+                <h3>Ингредиенты</h3>
+                <div id="ingredients-container">
+                    <div class="dynamic-list-item"><input type="text" class="ing-input" placeholder="Ингредиент и количество"></div>
+                </div>
+                <button class="btn btn-small btn-outline" onclick="addIngredientField()">+ Ингредиент</button>
+            </div>
+
+            <div class="form-group">
+                <h3>Шаги готовки и таймеры</h3>
+                <div id="steps-container">
+                    <div class="dynamic-list-item">
+                        <input type="text" class="step-desc" placeholder="Описание шага">
+                        <input type="number" class="step-time" placeholder="Минут" min="0">
+                    </div>
+                </div>
+                <button class="btn btn-small btn-outline" onclick="addStepField()">+ Шаг</button>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="btn" style="flex: 1;" onclick="saveRecipe()">Сохранить</button>
+                <button class="btn btn-outline" style="flex: 1;" onclick="closeModal()">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. Управление состоянием (State) ---
+        let recipes = JSON.parse(localStorage.getItem('my_recipes')) || [];
+        let weekPlan = JSON.parse(localStorage.getItem('week_plan')) || {
+            'Понедельник': {b: '', l: '', d: ''}, 'Вторник': {b: '', l: '', d: ''},
+            'Среда': {b: '', l: '', d: ''}, 'Четверг': {b: '', l: '', d: ''},
+            'Пятница': {b: '', l: '', d: ''}, 'Суббота': {b: '', l: '', d: ''}, 'Воскресенье': {b: '', l: '', d: ''}
+        };
+        let activeTimers = {}; // Хранилище интервалов для таймеров (решение проблемы №1)
+        let currentCookingRecipe = null;
+
+        const days = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
+        const meals = { b: 'Завтрак', l: 'Обед', d: 'Ужин' };
+
+        // Инициализация
+        renderRecipes();
+        renderWeekPlan();
+
+        // --- 2. Навигация ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.container').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+            
+            document.getElementById(`${tabId}-tab`).classList.add('active');
+            event.target.classList.add('active');
+            
+            // Если уходим с вкладки готовки, чистим таймеры (чтобы не пищали в фоне)
+            if (tabId !== 'cook') {
+                document.getElementById('nav-cook').style.display = 'none';
+                clearAllTimers();
+            }
+        }
+
+        // --- 3. Модальное окно и формы ---
+        function openModal() { document.getElementById('recipe-modal').style.display = 'flex'; }
+        function closeModal() { 
+            document.getElementById('recipe-modal').style.display = 'none';
+            document.getElementById('r-name').value = '';
+            document.getElementById('ingredients-container').innerHTML = '<div class="dynamic-list-item"><input type="text" class="ing-input" placeholder="Ингредиент и количество"></div>';
+            document.getElementById('steps-container').innerHTML = '<div class="dynamic-list-item"><input type="text" class="step-desc" placeholder="Описание шага"><input type="number" class="step-time" placeholder="Минут" min="0"></div>';
+        }
+
+        function addIngredientField() {
+            document.getElementById('ingredients-container').insertAdjacentHTML('beforeend', '<div class="dynamic-list-item"><input type="text" class="ing-input" placeholder="Ингредиент и количество"></div>');
+        }
+
+        function addStepField() {
+            document.getElementById('steps-container').insertAdjacentHTML('beforeend', '<div class="dynamic-list-item"><input type="text" class="step-desc" placeholder="Описание шага"><input type="number" class="step-time" placeholder="Минут" min="0"></div>');
+        }
+
+        // Сохранение рецепта (Решение проблемы №4 - валидация)
+        function saveRecipe() {
+            const name = document.getElementById('r-name').value.trim();
+            if (!name) return alert("Введите название рецепта!");
+
+            const ingredients = Array.from(document.querySelectorAll('.ing-input')).map(i => i.value.trim()).filter(i => i);
+            
+            const steps = Array.from(document.querySelectorAll('#steps-container .dynamic-list-item')).map(div => {
+                const desc = div.querySelector('.step-desc').value.trim();
+                const time = parseInt(div.querySelector('.step-time').value) || 0;
+                return desc ? { desc, time } : null;
+            }).filter(s => s);
+
+            const newRecipe = {
+                id: Date.now().toString(), // Уникальный ID (Решение проблемы №2)
+                name, ingredients, steps
+            };
+
+            recipes.push(newRecipe);
+            localStorage.setItem('my_recipes', JSON.stringify(recipes));
+            
+            renderRecipes();
+            renderWeekPlan(); // Обновляем селекты в плане
+            closeModal();
+        }
+
+        function deleteRecipe(id) {
+            if(confirm("Удалить рецепт?")) {
+                recipes = recipes.filter(r => r.id !== id);
+                localStorage.setItem('my_recipes', JSON.stringify(recipes));
+                renderRecipes();
+                renderWeekPlan();
+            }
+        }
+
+        // --- 4. Рендер списков ---
+        function renderRecipes() {
+            const list = document.getElementById('recipe-list');
+            list.innerHTML = '';
+            recipes.forEach(r => {
+                const totalTime = r.steps.reduce((sum, step) => sum + step.time, 0);
+                list.insertAdjacentHTML('beforeend', `
+                    <div class="recipe-card" onclick="startCooking('${r.id}')">
+                        <h3>${r.name}</h3>
+                        <p style="font-size: 13px; color: gray;">⏱ Время: ~${totalTime} мин.</p>
+                        <p style="font-size: 13px; color: gray;">Ингредиентов: ${r.ingredients.length}</p>
+                        <button class="btn btn-small btn-outline" style="margin-top: 10px; border-color: red; color: red;" onclick="event.stopPropagation(); deleteRecipe('${r.id}')">Удалить</button>
+                    </div>
+                `);
+            });
+        }
+
+        function renderWeekPlan() {
+            const list = document.getElementById('week-list');
+            list.innerHTML = '';
+            
+            // Генерируем опции для селекта
+            const options = `<option value="">-- Выбрать блюдо --</option>` + 
+                            recipes.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
+
+            days.forEach(day => {
+                list.insertAdjacentHTML('beforeend', `
+                    <div class="day-card">
+                        <div class="day-title">${day}</div>
+                        ${Object.keys(meals).map(mealKey => `
+                            <div class="meal-slot">
+                                <span>${meals[mealKey]}</span>
+                                <select onchange="updatePlan('${day}', '${mealKey}', this.value)">
+                                    ${options}
+                                </select>
+                            </div>
+                        `).join('')}
+                    </div>
+                `);
+            });
+
+            // Восстанавливаем выбранные значения
+            document.querySelectorAll('.day-card').forEach((card, index) => {
+                const day = days[index];
+                const selects = card.querySelectorAll('select');
+                selects[0].value = weekPlan[day].b || '';
+                selects[1].value = weekPlan[day].l || '';
+                selects[2].value = weekPlan[day].d || '';
+            });
+        }
+
+        function updatePlan(day, meal, recipeId) {
+            weekPlan[day][meal] = recipeId;
+            localStorage.setItem('week_plan', JSON.stringify(weekPlan));
+        }
+
+        // --- 5. Режим готовки и Таймеры ---
+        function startCooking(id) {
+            currentCookingRecipe = recipes.find(r => r.id === id);
+            
+            const navCookBtn = document.getElementById('nav-cook');
+            navCookBtn.style.display = 'block';
+            navCookBtn.click(); // Переключаем вкладку
+
+            const view = document.getElementById('cook-view');
+            view.innerHTML = `<h2>🍳 Готовим: ${currentCookingRecipe.name}</h2>
+                              <div style="margin: 15px 0;">
+                                <strong>Ингредиенты:</strong>
+                                <ul style="margin-left: 20px; font-size: 14px;">
+                                    ${currentCookingRecipe.ingredients.map(i => `<li>${i}</li>`).join('')}
+                                </ul>
+                              </div>
+                              <h3>Шаги:</h3>
+                              <div id="steps-render" style="margin-top: 15px;"></div>`;
+            
+            const stepsRender = document.getElementById('steps-render');
+            currentCookingRecipe.steps.forEach((step, index) => {
+                let timerHtml = '';
+                if (step.time > 0) {
+                    timerHtml = `
+                        <div class="timer-box" id="timer-box-${index}">
+                            <div class="time-display" id="time-display-${index}">${step.time}:00</div>
+                            <button class="btn btn-small" onclick="toggleTimer(${index}, ${step.time * 60})" id="btn-timer-${index}">▶ Старт</button>
+                            <button class="btn btn-small btn-outline" onclick="resetTimer(${index}, ${step.time * 60})">Сброс</button>
+                        </div>
+                    `;
+                }
+                stepsRender.insertAdjacentHTML('beforeend', `
+                    <div class="step-item">
+                        <p><strong>Шаг ${index + 1}:</strong> ${step.desc}</p>
+                        ${timerHtml}
+                    </div>
+                `);
+            });
+        }
+
+        // Логика таймеров
+        function toggleTimer(stepIndex, totalSeconds) {
+            const btn = document.getElementById(`btn-timer-${stepIndex}`);
+            
+            if (activeTimers[stepIndex]) {
+                // Пауза
+                clearInterval(activeTimers[stepIndex].interval);
+                activeTimers[stepIndex].interval = null;
+                btn.innerText = "▶ Продолжить";
+                btn.style.background = "var(--primary)";
+            } else {
+                // Старт
+                if (!activeTimers[stepIndex] || activeTimers[stepIndex].timeLeft === undefined) {
+                    activeTimers[stepIndex] = { timeLeft: totalSeconds, interval: null };
+                }
+
+                btn.innerText = "⏸ Пауза";
+                btn.style.background = "#ff922b";
+
+                activeTimers[stepIndex].interval = setInterval(() => {
+                    activeTimers[stepIndex].timeLeft--;
+                    updateTimerDisplay(stepIndex);
+
+                    if (activeTimers[stepIndex].timeLeft <= 0) {
+                        clearInterval(activeTimers[stepIndex].interval);
+                        document.getElementById(`time-display-${stepIndex}`).style.color = "var(--success)";
+                        btn.style.display = "none";
+                        alert(`⏰ Таймер для шага ${stepIndex + 1} завершен!`);
+                    }
+                }, 1000);
+            }
+        }
+
+        function resetTimer(stepIndex, totalSeconds) {
+            if (activeTimers[stepIndex] && activeTimers[stepIndex].interval) {
+                clearInterval(activeTimers[stepIndex].interval);
+            }
+            activeTimers[stepIndex] = { timeLeft: totalSeconds, interval: null };
+            updateTimerDisplay(stepIndex);
+            
+            const btn = document.getElementById(`btn-timer-${stepIndex}`);
+            btn.style.display = "inline-block";
+            btn.innerText = "▶ Старт";
+            btn.style.background = "var(--primary)";
+            document.getElementById(`time-display-${stepIndex}`).style.color = "var(--text)";
+        }
+
+        function updateTimerDisplay(stepIndex) {
+            const display = document.getElementById(`time-display-${stepIndex}`);
+            const t = activeTimers[stepIndex].timeLeft;
+            const m = Math.floor(t / 60);
+            const s = t % 60;
+            display.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+        }
+
+        function clearAllTimers() {
+            Object.values(activeTimers).forEach(timer => {
+                if (timer && timer.interval) clearInterval(timer.interval);
+            });
+            activeTimers = {};
+        }
+    </script>
+</body>
+</html>
