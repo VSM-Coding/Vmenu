@@ -11,6 +11,7 @@
             --bg: #f8f9fa;
             --card-bg: #ffffff;
             --text: #343a40;
+            --muted: #868e96;
             --border: #dee2e6;
             --success: #40c057;
             --accent: #fd7e14;
@@ -27,14 +28,13 @@
         body {
             background-color: var(--bg);
             color: var(--text);
-            padding-bottom: 80px;
+            padding-bottom: 85px;
         }
 
         button, select, input, textarea {
             touch-action: manipulation;
         }
 
-        /* Баннер диагностики ошибок */
         #error-banner {
             display: none;
             background: #ffe3e3;
@@ -47,25 +47,30 @@
         /* Навигация */
         nav {
             background: var(--card-bg);
-            padding: 12px 10px;
+            padding: 10px 6px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.08);
             position: sticky;
             top: 0;
             z-index: 100;
             display: flex;
             justify-content: center;
-            gap: 12px;
+            gap: 4px;
+            overflow-x: auto;
         }
 
         nav button {
             background: none;
             border: none;
-            font-size: 15px;
+            font-size: 13px;
             font-weight: 700;
-            color: #868e96;
+            color: var(--muted);
             cursor: pointer;
-            padding: 8px 12px;
+            padding: 8px 8px;
             border-bottom: 3px solid transparent;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
         }
 
         nav button.active {
@@ -73,11 +78,25 @@
             border-bottom: 3px solid var(--primary);
         }
 
+        .nav-badge {
+            background: var(--primary);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 1px 6px;
+            border-radius: 10px;
+            line-height: 1.4;
+        }
+
+        .nav-badge.empty {
+            display: none;
+        }
+
         /* Контейнеры */
         .container {
-            max-width: 800px;
-            margin: 18px auto;
-            padding: 0 15px;
+            max-width: 820px;
+            margin: 16px auto;
+            padding: 0 14px;
             display: none;
         }
 
@@ -85,16 +104,33 @@
             display: block;
         }
 
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .section-header h2 {
+            font-size: 21px;
+        }
+
         /* Кнопки */
         .btn {
             background: var(--primary);
             color: #fff;
             border: none;
-            padding: 10px 14px;
+            padding: 9px 13px;
             border-radius: 8px;
             cursor: pointer;
             font-size: 14px;
             font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
         }
 
         .btn:active {
@@ -107,40 +143,66 @@
             color: var(--primary);
         }
 
+        .btn-success {
+            background: var(--success);
+            color: #fff;
+            border: 1px solid var(--success);
+        }
+
+        .btn-ghost {
+            background: #f1f3f5;
+            color: #495057;
+            border: 1px solid #dee2e6;
+        }
+
         .btn-small {
-            padding: 7px 11px;
+            padding: 6px 10px;
             font-size: 13px;
-            border-radius: 6px;
+            border-radius: 7px;
         }
 
         .btn-block {
             width: 100%;
-            display: block;
-            text-align: center;
+            display: flex;
         }
 
-        /* Поиск и категории */
+        /* Поиск, сортировка и фильтры */
+        .search-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
         .search-box {
-            width: 100%;
-            padding: 11px 14px;
+            flex: 1;
+            padding: 10px 13px;
             border: 1px solid var(--border);
             border-radius: 8px;
             font-size: 15px;
-            margin-bottom: 12px;
             background: #fff;
+        }
+
+        .sort-select {
+            padding: 10px 10px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 13px;
+            background: #fff;
+            color: var(--text);
+            max-width: 145px;
         }
 
         .category-filters {
             display: flex;
-            gap: 8px;
+            gap: 7px;
             overflow-x: auto;
-            padding-bottom: 12px;
+            padding-bottom: 10px;
         }
 
         .cat-btn {
             background: #e9ecef;
             border: none;
-            padding: 7px 13px;
+            padding: 7px 12px;
             border-radius: 20px;
             font-size: 13px;
             font-weight: 600;
@@ -154,17 +216,22 @@
             color: #fff;
         }
 
+        .stats-line {
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 10px;
+        }
+
         /* Карточки рецептов */
         .recipe-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 14px;
-            margin-top: 8px;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 13px;
         }
 
         .recipe-card {
             background: var(--card-bg);
-            padding: 15px;
+            padding: 14px;
             border-radius: 12px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
             cursor: pointer;
@@ -172,7 +239,14 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            min-height: 165px;
+            min-height: 175px;
+        }
+
+        .card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 8px;
         }
 
         .badge {
@@ -185,69 +259,188 @@
             color: #495057;
         }
 
+        .fav-btn {
+            background: #fff5f5;
+            border: 1px solid #ffc9c9;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            font-size: 16px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .fav-btn.is-fav {
+            background: #ffe3e3;
+            border-color: #ff8787;
+        }
+
         .recipe-card h3 {
             margin: 8px 0;
-            font-size: 18px;
+            font-size: 17px;
             line-height: 1.3;
         }
 
         .card-meta {
             font-size: 13px;
-            color: #868e96;
+            color: var(--muted);
             display: flex;
             gap: 12px;
+            flex-wrap: wrap;
         }
 
         .card-actions {
             margin-top: 12px;
+            padding-top: 10px;
+            border-top: 1px solid #f1f3f5;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 6px;
         }
 
-        /* Меню на неделю */
-        .week-grid {
+        .card-icon-group {
+            display: flex;
+            gap: 6px;
+        }
+
+        /* Вкладка Готовим сегодня */
+        .today-list {
             display: grid;
-            gap: 14px;
-            margin-top: 14px;
+            gap: 12px;
         }
 
-        .day-card {
+        .today-card {
             background: var(--card-bg);
             padding: 14px;
             border-radius: 12px;
             border: 1px solid var(--border);
-        }
-
-        .day-title {
-            font-weight: 700;
-            font-size: 17px;
-            margin-bottom: 10px;
-            color: var(--primary);
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 6px;
-        }
-
-        .meal-slot {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
+            flex-direction: column;
             gap: 10px;
         }
 
-        .meal-slot span {
-            font-size: 14px;
-            white-space: nowrap;
+        .today-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
         }
 
-        .meal-slot select {
-            padding: 8px;
-            border-radius: 6px;
+        .today-card-title {
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+            color: var(--text);
+        }
+
+        .today-card-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .mini-portions {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: #f8f9fa;
+            padding: 4px 10px;
+            border-radius: 20px;
             border: 1px solid var(--border);
-            width: 65%;
+            font-size: 13px;
+        }
+
+        .mini-portions button {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        /* Вкладка Корзина */
+        .cart-box {
+            background: var(--card-bg);
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .cart-add-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .cart-add-row input {
+            flex: 1;
+            padding: 9px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
             font-size: 14px;
-            background: #fff;
+        }
+
+        .cart-group-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--primary);
+            background: #fff5f5;
+            padding: 6px 10px;
+            border-radius: 6px;
+            margin: 12px 0 6px 0;
+        }
+
+        .cart-group-title:first-child {
+            margin-top: 0;
+        }
+
+        .shopping-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 9px 4px;
+            border-bottom: 1px solid #f1f3f5;
+            font-size: 15px;
+        }
+
+        .shopping-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            cursor: pointer;
+        }
+
+        .shopping-label input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        .shopping-item.checked span {
+            text-decoration: line-through;
+            color: #adb5bd;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 36px 16px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px dashed var(--border);
+            color: var(--muted);
+            font-size: 15px;
+            line-height: 1.5;
         }
 
         /* Режим готовки и таймеры */
@@ -256,6 +449,13 @@
             padding: 18px;
             border-radius: 12px;
             border: 1px solid var(--border);
+        }
+
+        .cook-top-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: 12px 0;
         }
 
         .ingredients-box {
@@ -371,25 +571,6 @@
         .dynamic-list-item input {
             flex: 1;
         }
-
-        .shopping-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px 0;
-            border-bottom: 1px solid #f1f3f5;
-            font-size: 15px;
-        }
-
-        .shopping-item input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-        }
-
-        .shopping-item.checked span {
-            text-decoration: line-through;
-            color: #adb5bd;
-        }
     </style>
 </head>
 <body>
@@ -398,22 +579,31 @@
 
     <!-- Навигация -->
     <nav id="main-nav">
-        <button type="button" class="active" data-tab="recipes">📒 Рецепты</button>
-        <button type="button" data-tab="plan">📅 Неделя</button>
+        <button type="button" class="active" data-tab="recipes">📒 База</button>
+        <button type="button" data-tab="favorites">❤️ Избранное <span id="badge-fav" class="nav-badge empty">0</span></button>
+        <button type="button" data-tab="today">🍽 Сегодня <span id="badge-today" class="nav-badge empty">0</span></button>
+        <button type="button" data-tab="cart">🛒 Корзина <span id="badge-cart" class="nav-badge empty">0</span></button>
         <button type="button" data-tab="cook" id="nav-cook" style="display:none;">🍳 Готовка</button>
     </nav>
 
-    <!-- Вкладка: Мои Рецепты -->
+    <!-- Вкладка: База рецептов -->
     <div id="recipes-tab" class="container active">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; gap: 8px;">
-            <h2>Кулинарная книга</h2>
+        <div class="section-header">
+            <h2>База рецептов</h2>
             <div style="display: flex; gap: 8px;">
                 <button type="button" class="btn btn-outline btn-small" id="btn-open-import">🔄 Импорт</button>
                 <button type="button" class="btn btn-small" id="btn-open-new">+ Новый</button>
             </div>
         </div>
 
-        <input type="text" id="search-input" class="search-box" placeholder="Поиск по названию или ингредиентам...">
+        <div class="search-row">
+            <input type="text" id="search-input" class="search-box" placeholder="Поиск по блюду или продуктам...">
+            <select id="sort-select" class="sort-select">
+                <option value="default">По порядку</option>
+                <option value="time">Быстрые</option>
+                <option value="alpha">По алфавиту</option>
+            </select>
+        </div>
 
         <div class="category-filters" id="category-filters">
             <button type="button" class="cat-btn active" data-cat="все">Все</button>
@@ -423,38 +613,61 @@
             <button type="button" class="cat-btn" data-cat="Выпечка">🍰 Выпечка</button>
         </div>
 
+        <div id="recipes-stats" class="stats-line"></div>
         <div id="recipe-list" class="recipe-grid"></div>
     </div>
 
-    <!-- Вкладка: План на неделю -->
-    <div id="plan-tab" class="container">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; gap: 8px;">
-            <h2>Меню на неделю</h2>
-            <button type="button" class="btn btn-small btn-outline" id="btn-shopping-list" style="border-color: var(--accent); color: var(--accent);">🛒 Покупки</button>
+    <!-- Вкладка: Избранное -->
+    <div id="favorites-tab" class="container">
+        <div class="section-header">
+            <h2>❤️ Избранные рецепты</h2>
         </div>
-        <div id="week-list" class="week-grid"></div>
+        <div id="favorites-list" class="recipe-grid"></div>
     </div>
 
-    <!-- Вкладка: Готовка -->
+    <!-- Вкладка: Готовим сегодня -->
+    <div id="today-tab" class="container">
+        <div class="section-header">
+            <h2>🍽 Готовим сегодня</h2>
+            <div style="display: flex; gap: 8px;">
+                <button type="button" class="btn btn-outline btn-small" id="btn-go-cart">🛒 В корзину</button>
+                <button type="button" class="btn btn-ghost btn-small" id="btn-clear-today">Очистить</button>
+            </div>
+        </div>
+        <p style="font-size: 13px; color: var(--muted); margin-bottom: 12px;">
+            Все ингредиенты из блюд ниже автоматически добавляются в раздел «Корзина» с учётом выбранных порций.
+        </p>
+        <div id="today-list" class="today-list"></div>
+    </div>
+
+    <!-- Вкладка: Корзина -->
+    <div id="cart-tab" class="container">
+        <div class="section-header">
+            <h2>🛒 Корзина покупок</h2>
+            <div style="display: flex; gap: 8px;">
+                <button type="button" class="btn btn-outline btn-small" id="btn-clear-checked">Убрать купленное</button>
+            </div>
+        </div>
+        <div class="cart-box">
+            <div class="cart-add-row">
+                <input type="text" id="custom-cart-input" placeholder="Добавить свой продукт (например: Хлеб)...">
+                <button type="button" class="btn btn-small" id="btn-add-custom-cart">+ Добавить</button>
+            </div>
+            <div id="cart-content"></div>
+        </div>
+    </div>
+
+    <!-- Вкладка: Режим готовки -->
     <div id="cook-tab" class="container">
         <div id="cook-view" class="cooking-view"></div>
     </div>
 
-    <!-- Модалка: Список покупок -->
-    <div id="shopping-modal" class="modal-overlay">
-        <div class="modal">
-            <h2 style="margin-bottom: 12px; color: var(--primary);">🛒 Список покупок</h2>
-            <div id="shopping-list-content"></div>
-            <button type="button" class="btn btn-block" id="btn-close-shopping" style="margin-top: 16px;">Закрыть</button>
-        </div>
-    </div>
-
-    <!-- Модалка: Импорт / Бэкап (без глючных prompt) -->
+    <!-- Модалка: Импорт / Бэкап -->
     <div id="import-modal" class="modal-overlay">
         <div class="modal">
             <h2 style="margin-bottom: 10px;">🔄 Импорт и Бэкап</h2>
             <p style="font-size: 13px; color: #666; margin-bottom: 12px;">
-                Нажми «Показать мой код», чтобы скопировать свои рецепты, или вставь новый код в поле ниже и нажми «Загрузить».
+                Нажми «Показать мой код», чтобы скопировать свою базу рецептов, или вставь новый JSON-код в поле ниже и нажми «Загрузить».
             </p>
             <div class="form-group">
                 <textarea id="import-textarea" rows="6" placeholder="Вставь сюда JSON-код рецептов..."></textarea>
@@ -462,15 +675,17 @@
             <div style="display: flex; flex-direction: column; gap: 8px;">
                 <button type="button" class="btn" id="btn-do-import">📥 Загрузить из поля выше</button>
                 <button type="button" class="btn btn-outline" id="btn-do-export">📋 Показать и скопировать мой код</button>
-                <button type="button" class="btn btn-outline" id="btn-close-import" style="border-color: #adb5bd; color: #495057;">Закрыть</button>
+                <button type="button" class="btn btn-ghost" id="btn-close-import">Закрыть</button>
             </div>
         </div>
     </div>
 
-    <!-- Модалка: Новый рецепт -->
+    <!-- Модалка: Создание / Редактирование рецепта -->
     <div id="recipe-modal" class="modal-overlay">
         <div class="modal">
-            <h2 style="margin-bottom: 14px;">Новый рецепт</h2>
+            <h2 id="recipe-modal-title" style="margin-bottom: 14px;">Новый рецепт</h2>
+            <input type="hidden" id="r-edit-id" value="">
+
             <div class="form-group">
                 <label>Название блюда</label>
                 <input type="text" id="r-name" placeholder="Например: Паста Карбонара">
@@ -493,32 +708,24 @@
 
             <div class="form-group">
                 <label>Ингредиенты</label>
-                <div id="ingredients-container">
-                    <div class="dynamic-list-item"><input type="text" class="ing-input" placeholder="Мука - 200 г"></div>
-                </div>
+                <div id="ingredients-container"></div>
                 <button type="button" class="btn btn-small btn-outline" id="btn-add-ing">+ Ингредиент</button>
             </div>
 
             <div class="form-group">
                 <label>Шаги готовки и таймеры (в минутах)</label>
-                <div id="steps-container">
-                    <div class="dynamic-list-item">
-                        <input type="text" class="step-desc" placeholder="Описание шага">
-                        <input type="number" class="step-time" placeholder="Мин" min="0" style="max-width: 80px;">
-                    </div>
-                </div>
+                <div id="steps-container"></div>
                 <button type="button" class="btn btn-small btn-outline" id="btn-add-step">+ Шаг</button>
             </div>
 
             <div style="display: flex; gap: 10px; margin-top: 18px;">
                 <button type="button" class="btn" id="btn-save-recipe" style="flex: 1;">Сохранить</button>
-                <button type="button" class="btn btn-outline" id="btn-close-recipe" style="flex: 1;">Отмена</button>
+                <button type="button" class="btn btn-ghost" id="btn-close-recipe" style="flex: 1;">Отмена</button>
             </div>
         </div>
     </div>
 
     <script>
-        // Перехватчик ошибок для диагностики на телефоне
         window.onerror = function(msg, url, line) {
             const banner = document.getElementById('error-banner');
             if (banner) {
@@ -598,12 +805,383 @@
                     { desc: "За 15 минут до готовности переложите зажарку в кастрюлю.", time: 10 },
                     { desc: "За 5 минут до готовности добавьте сладкий перец (1.5 шт), помидоры (1.5 шт), лавровый лист (3 шт), душистый перец (3 шт), соль и специи по вкусу.", time: 5 }
                 ]
+            },
+            {
+                id: "4",
+                name: "🥩 Мамины котлеты в кастрюле",
+                category: "Ужин",
+                servings: 4,
+                ingredients: [
+                    "Фарш - 500 г",
+                    "Батон (размочить в воде) - 0.3 шт",
+                    "Яйцо - 1 шт",
+                    "Майонез - 1 ст. л.",
+                    "Лук репчатый - 1 шт",
+                    "Растительное масло - 3 ст. л.",
+                    "Соль, перец - по вкусу"
+                ],
+                steps: [
+                    { desc: "Размочите треть батона в воде и отожмите. Натрите лук на терке. Смешайте фарш, батон, яйцо, ложку майонеза, лук, соль и перец. Сформируйте котлеты.", time: 10 },
+                    { desc: "Сложите котлеты в кастрюлю, влейте растительное масло, накройте крышкой и доведите до шипения.", time: 3 },
+                    { desc: "Убавьте огонь на минимум и томите под крышкой до готовности.", time: 15 }
+                ]
+            },
+            {
+                id: "5",
+                name: "🍗 Пюре с куриной подливой",
+                category: "Обед",
+                servings: 4,
+                ingredients: [
+                    "Картофель - 5 шт",
+                    "Курица - 900 г",
+                    "Лук большой - 1 шт",
+                    "Морковь средняя - 2 шт",
+                    "Томатная паста - 3 ст. л.",
+                    "Куриный бульон Магги - по вкусу",
+                    "Подсолнечное масло - 2 ст. л.",
+                    "Чеснок сушёный, паприка сладкая, карри - по вкусу",
+                    "Томаты и базилик, душистый перец, приправа для курицы - по вкусу",
+                    "Соль - по минимуму"
+                ],
+                steps: [
+                    { desc: "Поставьте вариться 5 картошин в воде с добавлением бульона Магги и минимума соли.", time: 20 },
+                    { desc: "Нарежьте 900 г курицы, добавьте специи (чеснок, паприка, томаты-базилик, душистый перец, приправа для курицы, карри) и обжарьте на масле до золотистой корочки.", time: 10 },
+                    { desc: "Мелко нарежьте лук, натрите морковь на мелкой терке, добавьте к курице и обжарьте.", time: 6 },
+                    { desc: "Добавьте 3 ст. л. томатной пасты, слегка обжарьте, влейте 3–4 половника бульона или воды и тушите под крышкой.", time: 10 },
+                    { desc: "Готовый картофель растолките в пюре, добавив побольше отвара.", time: 5 }
+                ]
+            },
+            {
+                id: "6",
+                name: "🐟 Селёдка по-корейски",
+                category: "Ужин",
+                servings: 4,
+                ingredients: [
+                    "Селёдка (филе) - 1 шт",
+                    "Лук репчатый - 1.5 шт",
+                    "Уксус - 1 ст. л. (не переборщить)",
+                    "Красный острый перец - на кончике ножа",
+                    "Растительное масло - 3 ст. л.",
+                    "Соль, сахар - по вкусу"
+                ],
+                steps: [
+                    { desc: "Нарежьте филе сельди кусочками, а лук — полукольцами.", time: 7 },
+                    { desc: "Разогрейте в сковороде масло со специями, солью, сахаром, красным острым перцем (на кончике ножа) и уксусом. Остудите смесь до комнатной температуры.", time: 15 },
+                    { desc: "Залейте остывшей заправкой рыбу с луком, перемешайте и дайте промариноваться.", time: 60 }
+                ]
+            },
+            {
+                id: "7",
+                name: "🥗 Салат с огурцами в томатном соке",
+                category: "Обед",
+                servings: 2,
+                ingredients: [
+                    "Огурцы маринованные - 4 шт",
+                    "Лук репчатый - 1 шт",
+                    "Томатный сок - 100 мл",
+                    "Сахар - 1 ч. л."
+                ],
+                steps: [
+                    { desc: "Нарежьте маринованные огурцы кружочками, а лук — тонкими полукольцами.", time: 5 },
+                    { desc: "Залейте томатным соком, добавьте сахар и перемешайте.", time: 2 }
+                ]
+            },
+            {
+                id: "8",
+                name: "🍅 Фаршированные помидоры",
+                category: "Ужин",
+                servings: 4,
+                ingredients: [
+                    "Помидоры крупные - 6 шт",
+                    "Фарш - 450 г",
+                    "Рис - 100 г",
+                    "Лук - 1 шт",
+                    "Морковь - 1 шт",
+                    "Томатная паста - 1 ч. л.",
+                    "Соль, перец - по вкусу",
+                    "Кипячёная вода - 300 мл"
+                ],
+                steps: [
+                    { desc: "Отварите рис и остудите. У помидоров срежьте верхушки и выньте мякоть.", time: 15 },
+                    { desc: "Обжарьте лук и морковь, добавьте мякоть помидоров, 1 ч. л. томатной пасты и немного воды. Потушите 5 минут и остудите до комнатной температуры.", time: 5 },
+                    { desc: "Смешайте фарш с остывшим рисом, половиной зажарки, солью и перцем. Нафаршируйте помидоры и плотно выложите в кастрюлю.", time: 10 },
+                    { desc: "В оставшуюся зажарку влейте кипячёную воду (отступая от краев кастрюли 3 пальца), посолите, поперчите. После закипания томите на медленном огне.", time: 15 }
+                ]
+            },
+            {
+                id: "9",
+                name: "🍖 Домашняя подлива из мяса",
+                category: "Обед",
+                servings: 3,
+                ingredients: [
+                    "Филе мяса (курица или свинина) - 400 г",
+                    "Лук репчатый - 1 шт",
+                    "Томатная паста - 1 ст. л.",
+                    "Мука (для густоты, по желанию) - 1 ст. л.",
+                    "Масло для жарки - 2 ст. л.",
+                    "Вода - 250 мл",
+                    "Соль, перец - по вкусу"
+                ],
+                steps: [
+                    { desc: "Нарежьте филе небольшими кусочками с учетом ужарки и обжарьте на масле до легкой румяной корочки.", time: 7 },
+                    { desc: "Нарежьте лук полукольцами, добавьте к мясу, посолите, поперчите и обжарьте до мягкости. Для густоты можно добавить ложку муки и слегка обжарить.", time: 5 },
+                    { desc: "Добавьте 1 ст. л. томатной пасты и обжарьте для раскрытия вкуса.", time: 2 },
+                    { desc: "Влейте воду, чтобы покрыла мясо, доведите до кипения и тушите под крышкой на медленном огне (20 мин для курицы, до 60 мин для свинины).", time: 20 }
+                ]
+            },
+            {
+                id: "10",
+                name: "🥗 Салат с помидорами, сухариками и сыром",
+                category: "Ужин",
+                servings: 3,
+                ingredients: [
+                    "Томаты свежие - 3 шт",
+                    "Колбаса (сервелат) - 150 г",
+                    "Сухарики ржаные с чесноком - 1 пачка",
+                    "Сыр пармезан тёртый - 50 г",
+                    "Чеснок - 2 зубчика",
+                    "Майонез - 2 ст. л."
+                ],
+                steps: [
+                    { desc: "Нарежьте томаты и сервелат кубиками, мелко порубите чеснок.", time: 7 },
+                    { desc: "Смешайте томаты, колбасу, чеснок и тёртый пармезан, заправьте майонезом. Перед самой подачей добавьте сухарики.", time: 3 }
+                ]
+            },
+            {
+                id: "11",
+                name: "🥣 Окрошка на газировке",
+                category: "Обед",
+                servings: 6,
+                ingredients: [
+                    "Колбаса докторская - 400 г",
+                    "Картошка отварная в мундире - 400 г",
+                    "Яйца куриные - 3 шт",
+                    "Огурец средний - 2 шт",
+                    "Лук зелёный - 1 пучок",
+                    "Укроп - 1 пучок",
+                    "Петрушка - по желанию",
+                    "Вода газированная - 1.5 л",
+                    "Майонез - 1 маленькая пачка",
+                    "Лимонная кислота - 0.5 ч. л.",
+                    "Горчица - 0.5 ч. л.",
+                    "Соль - по вкусу"
+                ],
+                steps: [
+                    { desc: "Отварите картофель в мундире и яйца вкрутую, затем остудите и очистите.", time: 20 },
+                    { desc: "Нарежьте кубиками колбасу, картофель, яйца и огурцы. Мелко порубите зелёный лук, укроп и петрушку.", time: 15 },
+                    { desc: "Заправьте майонезом, горчицей, лимонной кислотой и солью. Залейте холодной газированной водой и перемешайте.", time: 3 }
+                ]
+            },
+            {
+                id: "12",
+                name: "🥪 Брускетта с рыбкой и творожным сыром",
+                category: "Завтрак",
+                servings: 2,
+                ingredients: [
+                    "Багет или чиабатта - 4 ломтика",
+                    "Творожный сыр - 100 г",
+                    "Красная рыба слабосолёная - 100 г"
+                ],
+                steps: [
+                    { desc: "Подсушите ломтики хлеба на сухой сковороде или в тостере.", time: 3 },
+                    { desc: "Намажьте творожный сыр и выложите сверху ломтики красной рыбы.", time: 2 }
+                ]
+            },
+            {
+                id: "13",
+                name: "🥧 Яблочная шарлотка",
+                category: "Выпечка",
+                servings: 6,
+                ingredients: [
+                    "Яблоки - 3 шт",
+                    "Яйца - 3 шт",
+                    "Сахар - 150 г",
+                    "Мука - 150 г",
+                    "Разрыхлитель - 0.5 ч. л."
+                ],
+                steps: [
+                    { desc: "Взбейте яйца с сахаром в пышную пену, аккуратно вмешайте просеянную муку с разрыхлителем.", time: 7 },
+                    { desc: "Нарежьте яблоки дольками, выложите в форму, залейте тестом и выпекайте при 180°C до готовности.", time: 35 }
+                ]
+            },
+            {
+                id: "14",
+                name: "🍜 Идеальный Том Ям",
+                category: "Обед",
+                servings: 4,
+                ingredients: [
+                    "Паста Том Ям - 100 г",
+                    "Кокосовое молоко - 250 мл",
+                    "Вода кипячёная - 1 л",
+                    "Грибы шампиньоны - 250 г",
+                    "Томаты черри - 250 г",
+                    "Кальмары кольцами (или креветки) - 250 г",
+                    "Лайм - 1 шт",
+                    "Соевый соус - 30 мл",
+                    "Рыбный соус - 20 мл",
+                    "Масло растительное - 5 г",
+                    "Сахар - 1 ч. л.",
+                    "Сушёный чеснок, соль - по вкусу"
+                ],
+                steps: [
+                    { desc: "Нарежьте грибы и черри на четвертинки. Выложите в кастрюлю грибы, пасту том ям, сок лайма, соевый и рыбный соусы, добавьте масло и слегка обжарьте.", time: 4 },
+                    { desc: "Залейте 1 л кипячёной воды, влейте кокосовое молоко и доведите до кипения.", time: 7 },
+                    { desc: "Закиньте кальмары (или креветки) и черри, снова доведите до кипения, добавьте соль, сахар и сушёный чеснок по вкусу.", time: 3 },
+                    { desc: "Снимите с огня и дайте супу настояться под крышкой. Подавайте с рисом жасмин.", time: 5 }
+                ]
+            },
+            {
+                id: "15",
+                name: "🍲 Солянка сборная мясная",
+                category: "Обед",
+                servings: 6,
+                ingredients: [
+                    "Грудка копчёная - 250 г",
+                    "Сосиски охотничьи - 4 шт",
+                    "Колбаса варёная - 150 г",
+                    "Колбаса сырокопчёная - 150 г",
+                    "Картофель - 200 г",
+                    "Огурцы солёные - 200 г",
+                    "Морковь - 150 г",
+                    "Лук - 50 г",
+                    "Томатная паста - 50 г",
+                    "Маслины - 100 г",
+                    "Растительное масло - 20 г",
+                    "Укроп - 1 пучок",
+                    "Лавровый лист - 2 шт",
+                    "Соль - 0.5 ст. л.",
+                    "Сахар - 1 ч. л.",
+                    "Лимон и сметана - отдельно при подаче"
+                ],
+                steps: [
+                    { desc: "Нарежьте картофель кубиками и поставьте вариться в кастрюле.", time: 10 },
+                    { desc: "Обжарьте на растительном масле нарезанный лук и тёртую морковь, добавив томатную пасту, солёные огурцы и сахар.", time: 8 },
+                    { desc: "Нарежьте копчёную грудку, охотничьи сосиски, варёную и сырокопчёную колбасу. Отправьте в кастрюлю вместе с зажаркой, лавровым листом и солью.", time: 10 },
+                    { desc: "Добавьте маслины и рубленый укроп. Подавайте с долькой лимона и сметаной.", time: 3 }
+                ]
+            },
+            {
+                id: "16",
+                name: "🥗 Салат Цезарь с курицей",
+                category: "Ужин",
+                servings: 2,
+                ingredients: [
+                    "Куриное филе - 200 г",
+                    "Салат айсберг - 150 г",
+                    "Томаты черри - 100 г",
+                    "Сухарики - 50 г",
+                    "Сыр пармезан - 40 г",
+                    "Соус Цезарь - 3 ст. л."
+                ],
+                steps: [
+                    { desc: "Нарежьте куриное филе и обжарьте на сковороде со специями до румяной корочки.", time: 10 },
+                    { desc: "Порвите листья айсберга, разрежьте черри пополам, выложите тёплую курицу, заправьте соусом Цезарь, посыпьте сухариками и пармезаном.", time: 5 }
+                ]
+            },
+            {
+                id: "17",
+                name: "🥘 Гречка с тушёнкой",
+                category: "Обед",
+                servings: 4,
+                ingredients: [
+                    "Гречка - 200 г",
+                    "Тушёнка - 1 банка",
+                    "Лук и морковь - по вкусу",
+                    "Вода - 400 мл",
+                    "Соль - по вкусу"
+                ],
+                steps: [
+                    { desc: "Обжарьте нарезанные овощи на жире из банки с тушёнкой.", time: 5 },
+                    { desc: "Выложите тушёнку, всыпьте промытую гречку, залейте водой, посолите и томите под крышкой на медленном огне.", time: 20 }
+                ]
+            },
+            {
+                id: "18",
+                name: "🥬 Тушёная капуста",
+                category: "Обед",
+                servings: 4,
+                ingredients: [
+                    "Капуста белокочанная - 600 г",
+                    "Морковь - 1 шт",
+                    "Лук - 1 шт",
+                    "Томатная паста - 1 ст. л.",
+                    "Растительное масло - 2 ст. л.",
+                    "Вода - 100 мл",
+                    "Соль, перец - по вкусу"
+                ],
+                steps: [
+                    { desc: "Нашинкуйте капусту, нарежьте лук и натрите морковь.", time: 7 },
+                    { desc: "Обжарьте овощи на масле, добавьте томатную пасту, немного воды, соль, перец и тушите под крышкой до мягкости.", time: 25 }
+                ]
+            },
+            {
+                id: "19",
+                name: "🧁 Куриные маффины с яйцом и сыром",
+                category: "Завтрак",
+                servings: 4,
+                ingredients: [
+                    "Куриное филе - 200 г",
+                    "Яйца - 3 шт",
+                    "Сыр твёрдый (гауда, чеддер) - 100 г",
+                    "Лук - 0.5 шт",
+                    "Болгарский перец или зелень - по вкусу",
+                    "Соль, перец, паприка, куркума, чеснок сушёный - по вкусу",
+                    "Масло - для смазывания форм"
+                ],
+                steps: [
+                    { desc: "Мелко порубите куриное филе, нарежьте лук и перец, натрите сыр.", time: 8 },
+                    { desc: "Взбейте яйца, вмешайте сыр, курицу, овощи и специи как на омлет. Разлейте по смазанным формочкам.", time: 4 },
+                    { desc: "Выпекайте в разогретой до 180°C духовке до румяной корочки.", time: 22 }
+                ]
+            },
+            {
+                id: "20",
+                name: "🥙 Пита с курицей и яйцом",
+                category: "Завтрак",
+                servings: 2,
+                ingredients: [
+                    "Готовая пита - 2 шт",
+                    "Куриное филе - 150 г",
+                    "Яйцо варёное - 2 шт",
+                    "Мягкий сыр (фета, творожный или рикотта) - 50 г",
+                    "Огурец или помидор - 1 шт",
+                    "Салат или шпинат - 1 горсть",
+                    "Соль, перец, лимонный сок - по вкусу"
+                ],
+                steps: [
+                    { desc: "Отварите яйца вкрутую и обжарьте куриное филе с солью и специями.", time: 10 },
+                    { desc: "Нарежьте курицу, остывшие яйца и овощи кубиками. Смешайте с мягким сыром, зеленью и лимонным соком.", time: 5 },
+                    { desc: "Разрежьте питы пополам и заполните кармашки начинкой.", time: 2 }
+                ]
+            },
+            {
+                id: "21",
+                name: "🥟 Мясной мешочек в слоёном тесте",
+                category: "Выпечка",
+                servings: 4,
+                ingredients: [
+                    "Слоёное бездрожжевое тесто - 1 лист (300 г)",
+                    "Куриное филе - 200 г",
+                    "Сыр - 80 г",
+                    "Грибы или лук - по желанию",
+                    "Яйцо (для смазывания) - 1 шт",
+                    "Соль, перец, специи - по вкусу"
+                ],
+                steps: [
+                    { desc: "Мелко нарежьте куриное филе (и грибы с луком при желании) и обжарьте до готовности со специями.", time: 10 },
+                    { desc: "Разделите размороженное тесто на 4 квадрата, выложите начинку и тёртый сыр, соберите края в мешочек и смажьте яйцом.", time: 7 },
+                    { desc: "Выпекайте в разогретой до 180°C духовке до золотистой корочки.", time: 20 }
+                ]
             }
         ];
 
+        const SEED_VERSION = 'v2_21_recipes';
         let recipes = [];
+
         try {
             const saved = JSON.parse(localStorage.getItem('my_recipes'));
+            const currentSeed = localStorage.getItem('recipes_seed_version');
+
             if (Array.isArray(saved) && saved.length > 0) {
                 recipes = saved.map(r => ({
                     id: String(r.id || Date.now()),
@@ -613,37 +1191,150 @@
                     ingredients: Array.isArray(r.ingredients) ? r.ingredients : [],
                     steps: Array.isArray(r.steps) ? r.steps : []
                 }));
-                // Если в памяти остались только старые базовые рецепты без Борща — добавим Борщ
-                if (!recipes.some(r => r.id === "3") && recipes.length <= 2 && recipes.some(r => r.id === "1")) {
-                    recipes.push(defaultRecipes[2]);
+
+                if (currentSeed !== SEED_VERSION) {
+                    defaultRecipes.forEach(def => {
+                        if (!recipes.some(r => r.id === def.id)) {
+                            recipes.push(def);
+                        }
+                    });
                     localStorage.setItem('my_recipes', JSON.stringify(recipes));
+                    localStorage.setItem('recipes_seed_version', SEED_VERSION);
                 }
             } else {
                 recipes = [...defaultRecipes];
                 localStorage.setItem('my_recipes', JSON.stringify(recipes));
+                localStorage.setItem('recipes_seed_version', SEED_VERSION);
             }
         } catch (e) {
             recipes = [...defaultRecipes];
         }
 
-        const days = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
-        const meals = { b: '🥞 Завтрак', l: '🍲 Обед', d: '🥩 Ужин' };
-
-        let weekPlan = {};
-        days.forEach(d => weekPlan[d] = { b: '', l: '', d: '' });
+        // Избранное (массив ID)
+        let favoriteIds = [];
         try {
-            const savedPlan = JSON.parse(localStorage.getItem('week_plan'));
-            if (savedPlan && typeof savedPlan === 'object') {
-                days.forEach(d => {
-                    if (savedPlan[d]) weekPlan[d] = savedPlan[d];
-                });
+            const savedFavs = JSON.parse(localStorage.getItem('favorite_recipes'));
+            if (Array.isArray(savedFavs)) favoriteIds = savedFavs.map(String);
+        } catch (e) {}
+
+        // Готовим сегодня: [{ recipeId: "3", servings: 6 }]
+        let todayMenu = [];
+        try {
+            const savedToday = JSON.parse(localStorage.getItem('today_recipes'));
+            if (Array.isArray(savedToday)) {
+                todayMenu = savedToday.filter(item => item && item.recipeId);
             }
+        } catch (e) {}
+
+        // Состояние чекбоксов корзины и свои дополнительные продукты
+        let cartChecked = {};
+        try {
+            const savedChecked = JSON.parse(localStorage.getItem('cart_checked'));
+            if (savedChecked && typeof savedChecked === 'object') cartChecked = savedChecked;
+        } catch (e) {}
+
+        let customCartItems = [];
+        try {
+            const savedCustom = JSON.parse(localStorage.getItem('cart_custom_items'));
+            if (Array.isArray(savedCustom)) customCartItems = savedCustom;
         } catch (e) {}
 
         let activeTimers = {};
         let currentCookingRecipe = null;
         let currentPortions = 2;
         let activeCategory = 'все';
+
+        function escapeHtml(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function scaleIngredient(ing, baseServings, targetServings) {
+            const ratio = targetServings / (baseServings || 2);
+            return String(ing).replace(/(\d+(?:[.,]\d+)?)(?!\s*%)/g, (match) => {
+                const num = parseFloat(match.replace(',', '.'));
+                if (isNaN(num)) return match;
+                const res = Math.round(num * ratio * 10) / 10;
+                return String(res).replace('.', ',');
+            });
+        }
+
+        function saveState() {
+            localStorage.setItem('my_recipes', JSON.stringify(recipes));
+            localStorage.setItem('favorite_recipes', JSON.stringify(favoriteIds));
+            localStorage.setItem('today_recipes', JSON.stringify(todayMenu));
+            localStorage.setItem('cart_checked', JSON.stringify(cartChecked));
+            localStorage.setItem('cart_custom_items', JSON.stringify(customCartItems));
+        }
+
+        function isFavorite(id) {
+            return favoriteIds.includes(String(id));
+        }
+
+        function isInToday(id) {
+            return todayMenu.some(item => String(item.recipeId) === String(id));
+        }
+
+        function toggleFavorite(id) {
+            const strId = String(id);
+            if (isFavorite(strId)) {
+                favoriteIds = favoriteIds.filter(x => x !== strId);
+            } else {
+                favoriteIds.push(strId);
+            }
+            saveState();
+            renderAll();
+        }
+
+        function toggleToday(id, customServings) {
+            const strId = String(id);
+            if (isInToday(strId)) {
+                todayMenu = todayMenu.filter(item => String(item.recipeId) !== strId);
+            } else {
+                const r = recipes.find(item => String(item.id) === strId);
+                if (!r) return;
+                todayMenu.push({
+                    recipeId: strId,
+                    servings: customServings || r.servings || 2
+                });
+            }
+            saveState();
+            renderAll();
+        }
+
+        function updateBadges() {
+            const validFavs = favoriteIds.filter(id => recipes.some(r => String(r.id) === String(id)));
+            const badgeFav = document.getElementById('badge-fav');
+            badgeFav.innerText = validFavs.length;
+            badgeFav.classList.toggle('empty', validFavs.length === 0);
+
+            const validToday = todayMenu.filter(item => recipes.some(r => String(r.id) === String(item.recipeId)));
+            const badgeToday = document.getElementById('badge-today');
+            badgeToday.innerText = validToday.length;
+            badgeToday.classList.toggle('empty', validToday.length === 0);
+
+            // Считаем некупленные позиции в корзине
+            let unboughtCount = 0;
+            validToday.forEach(entry => {
+                const r = recipes.find(item => String(item.id) === String(entry.recipeId));
+                if (r) {
+                    r.ingredients.forEach((_, idx) => {
+                        const key = `r_${r.id}_${idx}`;
+                        if (!cartChecked[key]) unboughtCount++;
+                    });
+                }
+            });
+            customCartItems.forEach(item => {
+                if (!item.checked) unboughtCount++;
+            });
+
+            const badgeCart = document.getElementById('badge-cart');
+            badgeCart.innerText = unboughtCount;
+            badgeCart.classList.toggle('empty', unboughtCount === 0);
+        }
 
         // --- Навигация ---
         function switchTab(tabId) {
@@ -667,8 +1358,9 @@
             if (btn) switchTab(btn.dataset.tab);
         });
 
-        // --- Поиск и фильтрация ---
+        // --- Поиск, сортировка и фильтрация ---
         document.getElementById('search-input').addEventListener('input', renderRecipes);
+        document.getElementById('sort-select').addEventListener('change', renderRecipes);
 
         document.getElementById('category-filters').addEventListener('click', (e) => {
             const btn = e.target.closest('button[data-cat]');
@@ -679,90 +1371,413 @@
             renderRecipes();
         });
 
-        // --- Рендер рецептов ---
+        function buildRecipeCard(r) {
+            const totalTime = r.steps.reduce((sum, s) => sum + (Number(s.time) || 0), 0);
+            const fav = isFavorite(r.id);
+            const today = isInToday(r.id);
+
+            const card = document.createElement('div');
+            card.className = 'recipe-card';
+            card.dataset.cookId = r.id;
+            card.innerHTML = `
+                <div>
+                    <div class="card-top">
+                        <span class="badge">${escapeHtml(r.category)}</span>
+                        <button type="button" class="fav-btn ${fav ? 'is-fav' : ''}" data-fav-id="${r.id}" title="В избранное">
+                            ${fav ? '❤️' : '🤍'}
+                        </button>
+                    </div>
+                    <h3>${escapeHtml(r.name)}</h3>
+                </div>
+                <div>
+                    <div class="card-meta">
+                        <span>⏱ ~${totalTime} мин.</span>
+                        <span>🥗 ${r.ingredients.length} ингред.</span>
+                        <span>🍽 ${r.servings} порц.</span>
+                    </div>
+                    <div class="card-actions">
+                        <button type="button" class="btn btn-small ${today ? 'btn-success' : 'btn-outline'}" data-today-id="${r.id}">
+                            ${today ? '✅ На сегодня' : '+ На сегодня'}
+                        </button>
+                        <div class="card-icon-group">
+                            <button type="button" class="btn btn-small btn-ghost" data-edit-id="${r.id}" title="Редактировать">✏️</button>
+                            <button type="button" class="btn btn-small btn-ghost" data-delete-id="${r.id}" style="color:#fa5252;" title="Удалить">🗑</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            return card;
+        }
+
         function renderRecipes() {
             const list = document.getElementById('recipe-list');
             const search = document.getElementById('search-input').value.toLowerCase().trim();
+            const sortBy = document.getElementById('sort-select').value;
             list.innerHTML = '';
 
-            recipes.forEach(r => {
+            let filtered = recipes.filter(r => {
                 const matchSearch = r.name.toLowerCase().includes(search) ||
                     r.ingredients.some(i => i.toLowerCase().includes(search));
                 const matchCat = activeCategory === 'все' || r.category === activeCategory;
-
-                if (matchSearch && matchCat) {
-                    const totalTime = r.steps.reduce((sum, s) => sum + (Number(s.time) || 0), 0);
-                    const card = document.createElement('div');
-                    card.className = 'recipe-card';
-                    card.dataset.cookId = r.id;
-                    card.innerHTML = `
-                        <div>
-                            <span class="badge">${r.category}</span>
-                            <h3>${r.name}</h3>
-                        </div>
-                        <div>
-                            <div class="card-meta">
-                                <span>⏱ ~${totalTime} мин.</span>
-                                <span>🥗 ${r.ingredients.length} ингред.</span>
-                            </div>
-                            <div class="card-actions">
-                                <span style="font-size:13px; color:var(--primary); font-weight:600;">Открыть →</span>
-                                <button type="button" class="btn btn-small btn-outline" data-delete-id="${r.id}" style="border-color:#fa5252; color:#fa5252;">🗑 Удалить</button>
-                            </div>
-                        </div>
-                    `;
-                    list.appendChild(card);
-                }
+                return matchSearch && matchCat;
             });
+
+            if (sortBy === 'time') {
+                filtered = [...filtered].sort((a, b) => {
+                    const tA = a.steps.reduce((s, x) => s + (Number(x.time) || 0), 0);
+                    const tB = b.steps.reduce((s, x) => s + (Number(x.time) || 0), 0);
+                    return tA - tB;
+                });
+            } else if (sortBy === 'alpha') {
+                filtered = [...filtered].sort((a, b) => {
+                    const nA = a.name.replace(/^[^\p{L}\p{N}]+/u, '');
+                    const nB = b.name.replace(/^[^\p{L}\p{N}]+/u, '');
+                    return nA.localeCompare(nB, 'ru');
+                });
+            }
+
+            document.getElementById('recipes-stats').innerText =
+                `Показано рецептов: ${filtered.length} из ${recipes.length}`;
+
+            if (filtered.length === 0) {
+                list.innerHTML = '<div class="empty-state" style="grid-column: 1 / -1;">По вашему запросу рецепты не найдены.</div>';
+                return;
+            }
+
+            filtered.forEach(r => list.appendChild(buildRecipeCard(r)));
         }
 
-        document.getElementById('recipe-list').addEventListener('click', (e) => {
+        function renderFavorites() {
+            const list = document.getElementById('favorites-list');
+            list.innerHTML = '';
+
+            const favRecipes = recipes.filter(r => isFavorite(r.id));
+            if (favRecipes.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1 / -1;">
+                        В избранном пока пусто.<br>
+                        Нажмите на 🤍 в углу любого рецепта в базе, чтобы сохранить его сюда.
+                    </div>
+                `;
+                return;
+            }
+
+            favRecipes.forEach(r => list.appendChild(buildRecipeCard(r)));
+        }
+
+        // Общий обработчик кликов по карточкам (База и Избранное)
+        function handleRecipeGridClick(e) {
+            const favBtn = e.target.closest('button[data-fav-id]');
+            if (favBtn) {
+                e.stopPropagation();
+                toggleFavorite(favBtn.dataset.favId);
+                return;
+            }
+
+            const todayBtn = e.target.closest('button[data-today-id]');
+            if (todayBtn) {
+                e.stopPropagation();
+                toggleToday(todayBtn.dataset.todayId);
+                return;
+            }
+
+            const editBtn = e.target.closest('button[data-edit-id]');
+            if (editBtn) {
+                e.stopPropagation();
+                openEditRecipeModal(editBtn.dataset.editId);
+                return;
+            }
+
             const delBtn = e.target.closest('button[data-delete-id]');
             if (delBtn) {
                 e.stopPropagation();
                 const id = delBtn.dataset.deleteId;
-                if (confirm('Удалить этот рецепт?')) {
-                    recipes = recipes.filter(r => r.id !== id);
-                    localStorage.setItem('my_recipes', JSON.stringify(recipes));
-                    renderRecipes();
-                    renderWeekPlan();
+                if (confirm('Удалить этот рецепт из базы?')) {
+                    recipes = recipes.filter(r => String(r.id) !== String(id));
+                    favoriteIds = favoriteIds.filter(x => String(x) !== String(id));
+                    todayMenu = todayMenu.filter(x => String(x.recipeId) !== String(id));
+                    saveState();
+                    renderAll();
                 }
                 return;
             }
+
             const card = e.target.closest('.recipe-card[data-cook-id]');
             if (card) {
                 startCooking(card.dataset.cookId);
             }
+        }
+
+        document.getElementById('recipe-list').addEventListener('click', handleRecipeGridClick);
+        document.getElementById('favorites-list').addEventListener('click', handleRecipeGridClick);
+
+        // --- Готовим сегодня ---
+        function renderToday() {
+            const list = document.getElementById('today-list');
+            const validToday = todayMenu.filter(item => recipes.some(r => String(r.id) === String(item.recipeId)));
+
+            if (validToday.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        На сегодня пока ничего не выбрано.<br>
+                        Откройте базу рецептов и нажмите <strong>«+ На сегодня»</strong> на нужных блюдах — их продукты сразу появятся в корзине.
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = validToday.map(entry => {
+                const r = recipes.find(item => String(item.id) === String(entry.recipeId));
+                const totalTime = r.steps.reduce((s, x) => s + (Number(x.time) || 0), 0);
+                return `
+                    <div class="today-card">
+                        <div class="today-card-header">
+                            <div>
+                                <span class="badge">${escapeHtml(r.category)} · ~${totalTime} мин.</span>
+                                <div class="today-card-title" data-open-cook="${r.id}" style="margin-top:6px;">${escapeHtml(r.name)}</div>
+                            </div>
+                            <button type="button" class="btn btn-small btn-ghost" data-remove-today="${r.id}" style="color:#fa5252;">✕ Убрать</button>
+                        </div>
+                        <div class="today-card-controls">
+                            <div class="mini-portions">
+                                <span>Порций:</span>
+                                <button type="button" data-today-port="${r.id}" data-delta="-1">−</button>
+                                <strong>${entry.servings}</strong>
+                                <button type="button" data-today-port="${r.id}" data-delta="1">+</button>
+                            </div>
+                            <button type="button" class="btn btn-small" data-open-cook="${r.id}">🍳 Готовить →</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        document.getElementById('today-list').addEventListener('click', (e) => {
+            const removeBtn = e.target.closest('button[data-remove-today]');
+            if (removeBtn) {
+                toggleToday(removeBtn.dataset.removeToday);
+                return;
+            }
+
+            const portBtn = e.target.closest('button[data-today-port]');
+            if (portBtn) {
+                const id = String(portBtn.dataset.todayPort);
+                const delta = Number(portBtn.dataset.delta);
+                const entry = todayMenu.find(item => String(item.recipeId) === id);
+                if (entry) {
+                    entry.servings = Math.max(1, (entry.servings || 2) + delta);
+                    saveState();
+                    renderToday();
+                    renderCart();
+                    updateBadges();
+                }
+                return;
+            }
+
+            const cookTrigger = e.target.closest('[data-open-cook]');
+            if (cookTrigger) {
+                const id = cookTrigger.dataset.openCook;
+                const entry = todayMenu.find(item => String(item.recipeId) === String(id));
+                startCooking(id, entry ? entry.servings : undefined);
+            }
         });
 
-        // --- Добавление рецепта ---
+        document.getElementById('btn-go-cart').addEventListener('click', () => switchTab('cart'));
+
+        document.getElementById('btn-clear-today').addEventListener('click', () => {
+            if (todayMenu.length === 0) return;
+            if (confirm('Очистить список блюд на сегодня и убрать их продукты из корзины?')) {
+                todayMenu = [];
+                saveState();
+                renderAll();
+            }
+        });
+
+        // --- Корзина покупок ---
+        function renderCart() {
+            const content = document.getElementById('cart-content');
+            const validToday = todayMenu.filter(item => recipes.some(r => String(r.id) === String(item.recipeId)));
+
+            if (validToday.length === 0 && customCartItems.length === 0) {
+                content.innerHTML = `
+                    <div class="empty-state" style="border:none; padding: 20px 10px;">
+                        Корзина пуста.<br>
+                        Добавьте блюда в раздел <strong>«🍽 Сегодня»</strong> или впишите нужный продукт в поле выше.
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+
+            validToday.forEach(entry => {
+                const r = recipes.find(item => String(item.id) === String(entry.recipeId));
+                if (!r) return;
+                html += `<div class="cart-group-title">${escapeHtml(r.name)} (${entry.servings} порц.)</div>`;
+                r.ingredients.forEach((ing, idx) => {
+                    const key = `r_${r.id}_${idx}`;
+                    const checked = Boolean(cartChecked[key]);
+                    const scaled = scaleIngredient(ing, r.servings, entry.servings);
+                    html += `
+                        <div class="shopping-item ${checked ? 'checked' : ''}">
+                            <label class="shopping-label">
+                                <input type="checkbox" data-cart-key="${key}" ${checked ? 'checked' : ''}>
+                                <span>${escapeHtml(scaled)}</span>
+                            </label>
+                        </div>
+                    `;
+                });
+            });
+
+            if (customCartItems.length > 0) {
+                html += `<div class="cart-group-title">Дополнительные покупки</div>`;
+                customCartItems.forEach((item, idx) => {
+                    html += `
+                        <div class="shopping-item ${item.checked ? 'checked' : ''}">
+                            <label class="shopping-label">
+                                <input type="checkbox" data-custom-idx="${idx}" ${item.checked ? 'checked' : ''}>
+                                <span>${escapeHtml(item.text)}</span>
+                            </label>
+                            <button type="button" class="btn btn-small btn-ghost" data-del-custom="${idx}" style="color:#fa5252;">✕</button>
+                        </div>
+                    `;
+                });
+            }
+
+            content.innerHTML = html;
+        }
+
+        document.getElementById('cart-content').addEventListener('change', (e) => {
+            if (e.target.dataset.cartKey) {
+                const key = e.target.dataset.cartKey;
+                cartChecked[key] = e.target.checked;
+                saveState();
+                e.target.closest('.shopping-item').classList.toggle('checked', e.target.checked);
+                updateBadges();
+                return;
+            }
+            if (e.target.dataset.customIdx !== undefined) {
+                const idx = Number(e.target.dataset.customIdx);
+                if (customCartItems[idx]) {
+                    customCartItems[idx].checked = e.target.checked;
+                    saveState();
+                    e.target.closest('.shopping-item').classList.toggle('checked', e.target.checked);
+                    updateBadges();
+                }
+            }
+        });
+
+        document.getElementById('cart-content').addEventListener('click', (e) => {
+            const delCustom = e.target.closest('button[data-del-custom]');
+            if (delCustom) {
+                customCartItems.splice(Number(delCustom.dataset.delCustom), 1);
+                saveState();
+                renderCart();
+                updateBadges();
+            }
+        });
+
+        document.getElementById('btn-add-custom-cart').addEventListener('click', addCustomCartItem);
+        document.getElementById('custom-cart-input').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') addCustomCartItem();
+        });
+
+        function addCustomCartItem() {
+            const input = document.getElementById('custom-cart-input');
+            const text = input.value.trim();
+            if (!text) return;
+            customCartItems.push({ text, checked: false });
+            input.value = '';
+            saveState();
+            renderCart();
+            updateBadges();
+        }
+
+        document.getElementById('btn-clear-checked').addEventListener('click', () => {
+            customCartItems = customCartItems.filter(item => !item.checked);
+            Object.keys(cartChecked).forEach(k => {
+                if (cartChecked[k]) delete cartChecked[k];
+            });
+            saveState();
+            renderCart();
+            updateBadges();
+        });
+
+        // --- Добавление и редактирование рецепта ---
+        function appendIngredientRow(val = '') {
+            const row = document.createElement('div');
+            row.className = 'dynamic-list-item';
+            row.innerHTML = `<input type="text" class="ing-input" placeholder="Ингредиент - количество">`;
+            row.querySelector('input').value = val;
+            document.getElementById('ingredients-container').appendChild(row);
+        }
+
+        function appendStepRow(desc = '', time = '') {
+            const row = document.createElement('div');
+            row.className = 'dynamic-list-item';
+            row.innerHTML = `
+                <input type="text" class="step-desc" placeholder="Описание шага">
+                <input type="number" class="step-time" placeholder="Мин" min="0" style="max-width: 80px;">
+            `;
+            row.querySelector('.step-desc').value = desc;
+            row.querySelector('.step-time').value = time;
+            document.getElementById('steps-container').appendChild(row);
+        }
+
         document.getElementById('btn-open-new').addEventListener('click', () => {
-            document.getElementById('recipe-modal').classList.add('open');
-        });
-
-        document.getElementById('btn-close-recipe').addEventListener('click', closeRecipeModal);
-
-        function closeRecipeModal() {
-            document.getElementById('recipe-modal').classList.remove('open');
+            document.getElementById('recipe-modal-title').innerText = 'Новый рецепт';
+            document.getElementById('r-edit-id').value = '';
             document.getElementById('r-name').value = '';
             document.getElementById('r-category').value = 'Обед';
             document.getElementById('r-servings').value = '2';
-            document.getElementById('ingredients-container').innerHTML = '<div class="dynamic-list-item"><input type="text" class="ing-input" placeholder="Мука - 200 г"></div>';
-            document.getElementById('steps-container').innerHTML = '<div class="dynamic-list-item"><input type="text" class="step-desc" placeholder="Описание шага"><input type="number" class="step-time" placeholder="Мин" min="0" style="max-width: 80px;"></div>';
+            document.getElementById('ingredients-container').innerHTML = '';
+            document.getElementById('steps-container').innerHTML = '';
+            appendIngredientRow('');
+            appendStepRow('', '');
+            document.getElementById('recipe-modal').classList.add('open');
+        });
+
+        function openEditRecipeModal(id) {
+            const r = recipes.find(item => String(item.id) === String(id));
+            if (!r) return;
+
+            document.getElementById('recipe-modal-title').innerText = 'Редактировать рецепт';
+            document.getElementById('r-edit-id').value = r.id;
+            document.getElementById('r-name').value = r.name;
+            document.getElementById('r-category').value = r.category || 'Обед';
+            document.getElementById('r-servings').value = r.servings || 2;
+
+            const ingCont = document.getElementById('ingredients-container');
+            ingCont.innerHTML = '';
+            if (r.ingredients.length > 0) {
+                r.ingredients.forEach(i => appendIngredientRow(i));
+            } else {
+                appendIngredientRow('');
+            }
+
+            const stepsCont = document.getElementById('steps-container');
+            stepsCont.innerHTML = '';
+            if (r.steps.length > 0) {
+                r.steps.forEach(s => appendStepRow(s.desc, s.time || ''));
+            } else {
+                appendStepRow('', '');
+            }
+
+            document.getElementById('recipe-modal').classList.add('open');
         }
 
-        document.getElementById('btn-add-ing').addEventListener('click', () => {
-            document.getElementById('ingredients-container').insertAdjacentHTML('beforeend', '<div class="dynamic-list-item"><input type="text" class="ing-input" placeholder="Ингредиент - количество"></div>');
+        document.getElementById('btn-close-recipe').addEventListener('click', () => {
+            document.getElementById('recipe-modal').classList.remove('open');
         });
 
-        document.getElementById('btn-add-step').addEventListener('click', () => {
-            document.getElementById('steps-container').insertAdjacentHTML('beforeend', '<div class="dynamic-list-item"><input type="text" class="step-desc" placeholder="Описание шага"><input type="number" class="step-time" placeholder="Мин" min="0" style="max-width: 80px;"></div>');
-        });
+        document.getElementById('btn-add-ing').addEventListener('click', () => appendIngredientRow(''));
+        document.getElementById('btn-add-step').addEventListener('click', () => appendStepRow('', ''));
 
         document.getElementById('btn-save-recipe').addEventListener('click', () => {
             const name = document.getElementById('r-name').value.trim();
             if (!name) return alert('Введите название рецепта!');
 
+            const editId = document.getElementById('r-edit-id').value;
             const category = document.getElementById('r-category').value;
             const servings = parseInt(document.getElementById('r-servings').value, 10) || 2;
             const ingredients = Array.from(document.querySelectorAll('.ing-input')).map(i => i.value.trim()).filter(Boolean);
@@ -772,101 +1787,59 @@
                 return desc ? { desc, time } : null;
             }).filter(Boolean);
 
-            recipes.push({ id: String(Date.now()), name, category, servings, ingredients, steps });
-            localStorage.setItem('my_recipes', JSON.stringify(recipes));
-
-            renderRecipes();
-            renderWeekPlan();
-            closeRecipeModal();
-        });
-
-        // --- Меню на неделю ---
-        function renderWeekPlan() {
-            const list = document.getElementById('week-list');
-            const optionsHtml = '<option value="">-- Выбрать блюдо --</option>' +
-                recipes.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
-
-            list.innerHTML = days.map(day => `
-                <div class="day-card">
-                    <div class="day-title">${day}</div>
-                    ${Object.keys(meals).map(key => `
-                        <div class="meal-slot">
-                            <span>${meals[key]}</span>
-                            <select data-day="${day}" data-meal="${key}">
-                                ${optionsHtml}
-                            </select>
-                        </div>
-                    `).join('')}
-                </div>
-            `).join('');
-
-            list.querySelectorAll('select').forEach(sel => {
-                const day = sel.dataset.day;
-                const meal = sel.dataset.meal;
-                sel.value = (weekPlan[day] && weekPlan[day][meal]) ? weekPlan[day][meal] : '';
-            });
-        }
-
-        document.getElementById('week-list').addEventListener('change', (e) => {
-            const sel = e.target.closest('select[data-day]');
-            if (!sel) return;
-            weekPlan[sel.dataset.day][sel.dataset.meal] = sel.value;
-            localStorage.setItem('week_plan', JSON.stringify(weekPlan));
-        });
-
-        // --- Список покупок ---
-        document.getElementById('btn-shopping-list').addEventListener('click', () => {
-            const items = [];
-            days.forEach(day => {
-                ['b', 'l', 'd'].forEach(meal => {
-                    const id = weekPlan[day][meal];
-                    if (id) {
-                        const r = recipes.find(item => item.id === id);
-                        if (r) items.push(...r.ingredients);
-                    }
-                });
-            });
-
-            const content = document.getElementById('shopping-list-content');
-            if (items.length === 0) {
-                content.innerHTML = '<p style="text-align:center; color:#868e96; margin:20px 0;">В меню на неделю пока не выбраны блюда.</p>';
+            if (editId) {
+                const idx = recipes.findIndex(r => String(r.id) === String(editId));
+                if (idx !== -1) {
+                    recipes[idx] = { id: String(editId), name, category, servings, ingredients, steps };
+                }
             } else {
-                content.innerHTML = items.map(ing => `
-                    <label class="shopping-item">
-                        <input type="checkbox">
-                        <span>${ing}</span>
-                    </label>
-                `).join('');
+                recipes.push({ id: String(Date.now()), name, category, servings, ingredients, steps });
             }
-            document.getElementById('shopping-modal').classList.add('open');
-        });
 
-        document.getElementById('shopping-list-content').addEventListener('change', (e) => {
-            if (e.target.type === 'checkbox') {
-                e.target.closest('.shopping-item').classList.toggle('checked', e.target.checked);
+            saveState();
+            renderAll();
+            document.getElementById('recipe-modal').classList.remove('open');
+
+            if (editId && currentCookingRecipe && String(currentCookingRecipe.id) === String(editId)) {
+                startCooking(editId);
             }
-        });
-
-        document.getElementById('btn-close-shopping').addEventListener('click', () => {
-            document.getElementById('shopping-modal').classList.remove('open');
         });
 
         // --- Режим готовки и таймеры ---
-        function startCooking(id) {
-            const recipe = recipes.find(r => r.id === id);
+        function startCooking(id, overrideServings) {
+            const recipe = recipes.find(r => String(r.id) === String(id));
             if (!recipe) return;
 
             currentCookingRecipe = recipe;
-            currentPortions = recipe.servings || 2;
+            currentPortions = overrideServings || recipe.servings || 2;
             clearAllTimers();
 
             const navCook = document.getElementById('nav-cook');
-            navCook.style.display = 'inline-block';
+            navCook.style.display = 'inline-flex';
             switchTab('cook');
 
+            renderCookingView();
+        }
+
+        function renderCookingView() {
+            const recipe = currentCookingRecipe;
+            if (!recipe) return;
+
+            const fav = isFavorite(recipe.id);
+            const today = isInToday(recipe.id);
             const view = document.getElementById('cook-view');
+
             view.innerHTML = `
-                <h2>${recipe.name}</h2>
+                <h2>${escapeHtml(recipe.name)}</h2>
+                <div class="cook-top-actions">
+                    <button type="button" class="btn btn-small ${fav ? 'btn-outline' : 'btn-ghost'}" id="cook-fav-btn">
+                        ${fav ? '❤️ В избранном' : '🤍 В избранное'}
+                    </button>
+                    <button type="button" class="btn btn-small ${today ? 'btn-success' : 'btn-outline'}" id="cook-today-btn">
+                        ${today ? '✅ В меню сегодня' : '+ Готовим сегодня'}
+                    </button>
+                    <button type="button" class="btn btn-small btn-ghost" id="cook-edit-btn">✏️ Изменить</button>
+                </div>
                 <div class="ingredients-box">
                     <div style="font-weight:700; font-size:14px;">Количество порций:</div>
                     <div class="portions-control">
@@ -881,7 +1854,7 @@
                 <div id="steps-render">
                     ${recipe.steps.map((step, idx) => `
                         <div class="step-item">
-                            <p><strong>Шаг ${idx + 1}:</strong> ${step.desc}</p>
+                            <p><strong>Шаг ${idx + 1}:</strong> ${escapeHtml(step.desc)}</p>
                             ${step.time > 0 ? `
                                 <div class="timer-box">
                                     <div class="time-display" id="time-display-${idx}">${step.time}:00</div>
@@ -900,20 +1873,30 @@
         function recalculateIngredients() {
             const ul = document.getElementById('ingredients-render');
             if (!ul || !currentCookingRecipe) return;
-            const ratio = currentPortions / (currentCookingRecipe.servings || 2);
 
             ul.innerHTML = currentCookingRecipe.ingredients.map(ing => {
-                const scaled = ing.replace(/(\d+(?:[.,]\d+)?)(?!\s*%)/g, (match) => {
-                    const num = parseFloat(match.replace(',', '.'));
-                    if (isNaN(num)) return match;
-                    const res = Math.round(num * ratio * 10) / 10;
-                    return String(res).replace('.', ',');
-                });
-                return `<li>${scaled}</li>`;
+                const scaled = scaleIngredient(ing, currentCookingRecipe.servings, currentPortions);
+                return `<li>${escapeHtml(scaled)}</li>`;
             }).join('');
         }
 
         document.getElementById('cook-view').addEventListener('click', (e) => {
+            if (!currentCookingRecipe) return;
+
+            if (e.target.id === 'cook-fav-btn') {
+                toggleFavorite(currentCookingRecipe.id);
+                renderCookingView();
+                return;
+            }
+            if (e.target.id === 'cook-today-btn') {
+                toggleToday(currentCookingRecipe.id, currentPortions);
+                renderCookingView();
+                return;
+            }
+            if (e.target.id === 'cook-edit-btn') {
+                openEditRecipeModal(currentCookingRecipe.id);
+                return;
+            }
             if (e.target.id === 'btn-port-minus') {
                 if (currentPortions > 1) {
                     currentPortions--;
@@ -946,7 +1929,6 @@
                 activeTimers[idx] = { remaining: totalSeconds, intervalId: null };
             }
 
-            // Если таймер сейчас идет — ставим на паузу
             if (activeTimers[idx].intervalId !== null) {
                 clearInterval(activeTimers[idx].intervalId);
                 activeTimers[idx].intervalId = null;
@@ -955,7 +1937,6 @@
                 return;
             }
 
-            // Если время уже вышло — начинаем заново
             if (activeTimers[idx].remaining <= 0) {
                 activeTimers[idx].remaining = totalSeconds;
                 updateTimerDisplay(idx);
@@ -1048,7 +2029,7 @@
             textarea.select();
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(json).then(() => {
-                    alert('✅ Код скопирован в буфер обмена!');
+                    alert('✅ Код базы рецептов скопирован в буфер обмена!');
                 }).catch(() => {});
             }
         });
@@ -1059,10 +2040,16 @@
             try {
                 const parsed = JSON.parse(raw);
                 if (!Array.isArray(parsed)) return alert('❌ Неверный формат: ожидается список рецептов.');
-                recipes = parsed;
-                localStorage.setItem('my_recipes', JSON.stringify(recipes));
-                renderRecipes();
-                renderWeekPlan();
+                recipes = parsed.map(r => ({
+                    id: String(r.id || Date.now()),
+                    name: r.name || 'Без названия',
+                    category: r.category || 'Обед',
+                    servings: Number(r.servings) || 2,
+                    ingredients: Array.isArray(r.ingredients) ? r.ingredients : [],
+                    steps: Array.isArray(r.steps) ? r.steps : []
+                }));
+                saveState();
+                renderAll();
                 document.getElementById('import-modal').classList.remove('open');
                 alert('✅ Рецепты успешно загружены!');
             } catch (e) {
@@ -1070,10 +2057,15 @@
             }
         });
 
-        // Первый запуск
-        renderRecipes();
-        renderWeekPlan();
+        function renderAll() {
+            renderRecipes();
+            renderFavorites();
+            renderToday();
+            renderCart();
+            updateBadges();
+        }
+
+        renderAll();
     </script>
 </body>
 </html>
-
