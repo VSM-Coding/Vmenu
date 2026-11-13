@@ -81,7 +81,6 @@
         .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 15px; outline: none; }
         .dynamic-list-item { display: flex; gap: 8px; margin-bottom: 8px; }
         .dynamic-list-item input { flex: 1; }
-
     </style>
 </head>
 <body>
@@ -148,7 +147,7 @@
     <!-- Модальное окно создания рецепта -->
     <div id="recipe-modal" class="modal-overlay">
         <div class="modal">
-            <h2 id="modal-title" style="margin-bottom: 15px;">Новый рецепт</h2>
+            <h2 style="margin-bottom: 15px;">Новый рецепт</h2>
             <div class="form-group">
                 <input type="text" id="r-name" placeholder="Название блюда (например, Паста Карбонара)" required>
             </div>
@@ -169,7 +168,7 @@
             </div>
             
             <div class="form-group">
-                <label>Ингредиенты (Пиши кол-во числом, чтобы масштабировать, например: Мука - 200 г)</label>
+                <label>Ингредиенты (Пиши кол-во числом, чтобы масштабировать)</label>
                 <div id="ingredients-container">
                     <div class="dynamic-list-item"><input type="text" class="ing-input" placeholder="Мука - 200 г"></div>
                 </div>
@@ -195,7 +194,7 @@
     </div>
 
     <script>
-        // --- Базовые заготовленные рецепты для первого запуска ---
+        // --- Базовые рецепты ---
         const defaultRecipes = [
             {
                 id: "1",
@@ -205,35 +204,41 @@
                 ingredients: ["Творог 9% - 400 г", "Яйцо - 1 шт", "Сахар - 2 ст. л.", "Мука пшеничная - 3 ст. л.", "Растительное масло - 2 ст. л.", "Соль - 1 щепотка"],
                 steps: [
                     { desc: "Разомните творог вилкой в миске. Добавьте яйцо, сахар и щепотку соли, тщательно перемешайте.", time: 5 },
-                    { desc: "Всыпьте муку и еще раз перемешайте, чтобы получилось мягкое, слегка липкое тесто.", time: 5 },
+                    { desc: "Всыпьте муку и еще раз перемешайте.", time: 5 },
                     { desc: "Сформируйте небольшие круглые сырники и обваляйте их в муке.", time: 7 },
-                    { desc: "Разогрейте сковороду с маслом и обжаривайте сырники на среднем огне до золотистой корочки с каждой стороны.", time: 10 }
-                ]
-            },
-            {
-                id: "2",
-                name: "🍝 Классическая карбонара",
-                category: "Ужин",
-                servings: 2,
-                ingredients: ["Спагетти - 200 г", "Бекон или грудинка - 100 г", "Сыр пармезан - 50 г", "Желтки яичные - 3 шт", "Чеснок - 1 зубчик", "Соль - 1 ч. л.", "Черный перец - по вкусу"],
-                steps: [
-                    { desc: "Поставьте вариться спагетти в кипящей соленой воде на 1 минуту меньше времени, указанного на пачке.", time: 9 },
-                    { desc: "Нарежьте бекон кубиками и обжарьте на сковороде с раздавленным зубчиком чеснока (чеснок потом убрать).", time: 6 },
-                    { desc: "Смешайте в миске яичные желтки, мелко натертый сыр и молотый перец.", time: 4 },
-                    { desc: "Добавьте горячие спагетти в сковороду к бекону, снимите сковороду с огня, влейте яично-сырную смесь и быстро перемешайте, чтобы соус загустел.", time: 3 }
+                    { desc: "Разогрейте сковороду с маслом и обжаривайте сырники до золотистой корочки.", time: 10 }
                 ]
             }
         ];
 
-        // --- Управление состоянием (State) ---
-        let recipes = JSON.parse(localStorage.getItem('my_recipes')) || defaultRecipes;
-        if (recipes.length === 0) recipes = defaultRecipes;
+        // --- БЕЗОПАСНАЯ ИНИЦИАЛИЗАЦИЯ ДАННЫХ (Исправление бага падения) ---
+        let recipes = defaultRecipes;
+        try {
+            const saved = JSON.parse(localStorage.getItem('my_recipes'));
+            if (Array.isArray(saved) && saved.length > 0) {
+                // Добавляем защиту от старых неполных рецептов
+                recipes = saved.map(r => ({
+                    id: r.id || Date.now().toString(),
+                    name: r.name || 'Без названия',
+                    category: r.category || 'Обед',
+                    servings: r.servings || 2,
+                    ingredients: Array.isArray(r.ingredients) ? r.ingredients : [],
+                    steps: Array.isArray(r.steps) ? r.steps : []
+                }));
+            }
+        } catch (e) {
+            console.warn("Ошибка загрузки рецептов из памяти, загружены базовые.");
+        }
 
-        let weekPlan = JSON.parse(localStorage.getItem('week_plan')) || {
+        let weekPlan = {
             'Понедельник': {b: '', l: '', d: ''}, 'Вторник': {b: '', l: '', d: ''},
             'Среда': {b: '', l: '', d: ''}, 'Четверг': {b: '', l: '', d: ''},
             'Пятница': {b: '', l: '', d: ''}, 'Суббота': {b: '', l: '', d: ''}, 'Воскресенье': {b: '', l: '', d: ''}
         };
+        try {
+            const savedPlan = JSON.parse(localStorage.getItem('week_plan'));
+            if (savedPlan && savedPlan['Понедельник']) weekPlan = savedPlan;
+        } catch(e) {}
         
         let activeTimers = {}; 
         let currentCookingRecipe = null;
@@ -243,27 +248,32 @@
         const days = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
         const meals = { b: '🥞 Завтрак', l: '🍲 Обед', d: '🥩 Ужин' };
 
-        // Инициализация
         renderRecipes();
         renderWeekPlan();
 
-        // --- Навигация ---
+        // --- БЕЗОПАСНАЯ НАВИГАЦИЯ (Исправление бага Safari/iPhone) ---
         function switchTab(tabId) {
             document.querySelectorAll('.container').forEach(c => c.classList.remove('active'));
             document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
             
-            document.getElementById(`${tabId}-tab`).classList.add('active');
+            const targetTab = document.getElementById(tabId + '-tab');
+            if (targetTab) targetTab.classList.add('active');
             
-            const btn = Array.from(document.querySelectorAll('nav button')).find(b => b.onclick.toString().includes(tabId));
-            if (btn) btn.classList.add('active');
+            document.querySelectorAll('nav button').forEach(b => {
+                const attr = b.getAttribute('onclick');
+                if (attr && attr.includes(tabId)) {
+                    b.classList.add('active');
+                }
+            });
             
             if (tabId !== 'cook') {
-                document.getElementById('nav-cook').style.display = 'none';
+                const navCookBtn = document.getElementById('nav-cook');
+                if (navCookBtn) navCookBtn.style.display = 'none';
                 clearAllTimers();
             }
         }
 
-        // --- Работа с рецептами ---
+        // --- Формы и Модалки ---
         function openModal() { document.getElementById('recipe-modal').style.display = 'flex'; }
         
         function closeModal() { 
@@ -298,12 +308,7 @@
                 return desc ? { desc, time } : null;
             }).filter(s => s);
 
-            const newRecipe = {
-                id: Date.now().toString(),
-                name, category, servings, ingredients, steps
-            };
-
-            recipes.push(newRecipe);
+            recipes.push({ id: Date.now().toString(), name, category, servings, ingredients, steps });
             localStorage.setItem('my_recipes', JSON.stringify(recipes));
             
             renderRecipes();
@@ -311,7 +316,9 @@
             closeModal();
         }
 
-        function deleteRecipe(id) {
+        // Исправлено удаление рецепта (защита от конфликта событий)
+        function deleteRecipe(event, id) {
+            if (event) event.stopPropagation();
             if(confirm("Удалить этот рецепт навсегда?")) {
                 recipes = recipes.filter(r => r.id !== id);
                 localStorage.setItem('my_recipes', JSON.stringify(recipes));
@@ -320,19 +327,24 @@
             }
         }
 
-        // --- Отрисовка & Фильтрация ---
+        // --- Отрисовка ---
         function renderRecipes() {
             const list = document.getElementById('recipe-list');
+            if (!list) return;
             list.innerHTML = '';
             
-            const search = document.getElementById('search-input').value.toLowerCase();
+            const searchInput = document.getElementById('search-input');
+            const search = searchInput ? searchInput.value.toLowerCase() : '';
 
             recipes.forEach(r => {
-                const searchMatch = r.name.toLowerCase().includes(search) || r.ingredients.some(i => i.toLowerCase().includes(search));
+                const safeName = r.name ? r.name.toLowerCase() : '';
+                const searchMatch = safeName.includes(search) || (r.ingredients && r.ingredients.some(i => i && i.toLowerCase().includes(search)));
                 const catMatch = activeCategory === 'все' || r.category === activeCategory;
 
                 if (searchMatch && catMatch) {
-                    const totalTime = r.steps.reduce((sum, s) => sum + s.time, 0);
+                    const totalTime = r.steps ? r.steps.reduce((sum, s) => sum + (s.time || 0), 0) : 0;
+                    const ingCount = r.ingredients ? r.ingredients.length : 0;
+                    
                     list.insertAdjacentHTML('beforeend', `
                         <div class="recipe-card" onclick="startCooking('${r.id}')">
                             <div>
@@ -342,9 +354,6 @@
                             <div>
                                 <div class="card-meta">
                                     <span>⏱ ~${totalTime} мин.</span>
-                                    <span>🥗 ${r.ingredients.length} ингред.</span>
+                                    <span>🥗 ${ingCount} ингред.</span>
                                 </div>
-                                <button class="btn btn-small btn-outline" style="margin-top: 10px; border-color: red; color: red;" onclick="event.stopPropagation(); deleteRecipe('${r.id}')">🗑 Удалить</button>
-                            </div>
-                        </div>
-               
+                                <button class="btn btn-small btn-outline" style="mar
