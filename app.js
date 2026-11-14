@@ -6,7 +6,11 @@ window.onerror = function(msg, url, line) {
     }
 };
 
-const DB_SCHEMA_VERSION = '2026-11-14-refined-v6';
+const DB_SCHEMA_VERSION = '2026-11-14-fresh-v1';
+const LEGACY_DEFAULT_IDS = [
+    "1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
+    "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21"
+];
 
 const baseDefaultRecipes = (typeof defaultRecipes !== 'undefined' && Array.isArray(defaultRecipes))
     ? defaultRecipes
@@ -25,7 +29,7 @@ try {
     if (Array.isArray(savedFavs)) favoriteIds = savedFavs.map(String);
 } catch (e) {}
 
-// Готовим сегодня: [{ recipeId: "3", servings: 6 }]
+// Готовим сегодня: [{ recipeId: "101", servings: 6 }]
 let todayMenu = [];
 try {
     const savedToday = JSON.parse(localStorage.getItem('today_recipes'));
@@ -42,19 +46,23 @@ try {
     const needsSync = currentSchema !== DB_SCHEMA_VERSION;
 
     if (Array.isArray(saved) && saved.length > 0) {
-        // Удаляем стандартные сырники (id "1") из памяти телефона
-        const cleanedSaved = saved.filter(r => !(String(r.id) === '1' && r.name === '🔥 Пышные сырники'));
-        if (cleanedSaved.length !== saved.length) {
-            favoriteIds = favoriteIds.filter(id => id !== '1');
-            todayMenu = todayMenu.filter(item => String(item.recipeId) !== '1');
+        let cleanedSaved = saved;
+
+        // При переходе на новую базу убираем старые стандартные рецепты (id 1..21)
+        if (needsSync) {
+            cleanedSaved = saved.filter(r => !LEGACY_DEFAULT_IDS.includes(String(r.id)));
+            favoriteIds = favoriteIds.filter(id => !LEGACY_DEFAULT_IDS.includes(String(id)));
+            todayMenu = todayMenu.filter(item => !LEGACY_DEFAULT_IDS.includes(String(item.recipeId)));
+            deletedDefaultIds = deletedDefaultIds.filter(id => !LEGACY_DEFAULT_IDS.includes(String(id)));
+
             localStorage.setItem('favorite_recipes', JSON.stringify(favoriteIds));
             localStorage.setItem('today_recipes', JSON.stringify(todayMenu));
+            localStorage.setItem('deleted_default_ids', JSON.stringify(deletedDefaultIds));
         }
 
         recipes = cleanedSaved.map(r => {
             const defMatch = baseDefaultRecipes.find(d => String(d.id) === String(r.id));
 
-            // При обновлении версии базы подтягиваем проработанные рецепты и очищенные таймеры
             if (defMatch && needsSync) {
                 return {
                     id: String(defMatch.id),
@@ -359,12 +367,12 @@ document.getElementById('btn-home-import').addEventListener('click', () => {
 
 const INGREDIENT_KEYWORDS = {
     'курица': ['куриц', 'курин', 'грудка'],
-    'мясо': ['фарш', 'говяж', 'свинин', 'мяс', 'тушёнк', 'тушенк', 'бекон', 'колбас', 'сосиск', 'сервелат'],
-    'рыба': ['рыб', 'селёд', 'селед', 'сельдь', 'кальмар', 'креветк', 'лосос', 'семг', 'форел', 'тунец'],
+    'мясо': ['фарш', 'говяж', 'свинин', 'мяс', 'тушёнк', 'тушенк', 'бекон', 'колбас', 'сосиск', 'сервелат', 'ветчин'],
+    'рыба': ['рыб', 'селёд', 'селед', 'сельдь', 'кальмар', 'креветк', 'лосос', 'семг', 'форел', 'тунец', 'нори'],
     'яйца': ['яйц', 'яичн', 'желтк', 'творог'],
     'картофель': ['картош', 'картофел'],
-    'сыр': ['сыр', 'пармезан', 'фета', 'рикотта'],
-    'овощи': ['капуст', 'помидор', 'томат', 'огур', 'гриб', 'яблок', 'перец']
+    'сыр': ['сыр', 'пармезан', 'фета', 'рикотта', 'моцарелл'],
+    'овощи': ['капуст', 'помидор', 'томат', 'огур', 'гриб', 'яблок', 'перец', 'морков', 'кимчи', 'салат']
 };
 
 function getHomeFilteredRecipes() {
