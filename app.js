@@ -129,10 +129,9 @@ let currentPortions = 2;
 let completedSteps = {};
 let activeCategory = 'все';
 
-// Состояние главного экрана (фильтр по продукту и случайный рецепт)
+// Состояние главного экрана (фильтр по продукту и поиск)
 let homeIngChip = 'все';
 let homeCustomIng = '';
-let currentRandomRecipeId = null;
 
 // Wake Lock (удержание экрана включённым во время готовки)
 let wakeLockSentinel = null;
@@ -351,7 +350,7 @@ document.getElementById('main-nav').addEventListener('click', (e) => {
     if (btn) switchTab(btn.dataset.tab);
 });
 
-// --- Главный экран: плитки и умный подбор ---
+// --- Главный экран: плитки и вся база с фильтрацией ---
 document.querySelector('.home-tiles').addEventListener('click', (e) => {
     const tile = e.target.closest('.home-tile[data-go-tab]');
     if (tile) switchTab(tile.dataset.goTab);
@@ -378,7 +377,7 @@ const INGREDIENT_KEYWORDS = {
 function getHomeFilteredRecipes() {
     const custom = homeCustomIng.toLowerCase().trim();
     return recipes.filter(r => {
-        const fullText = (r.name + ' ' + r.ingredients.join(' ')).toLowerCase();
+        const fullText = (r.name + ' ' + r.category + ' ' + r.ingredients.join(' ')).toLowerCase();
 
         let matchChip = true;
         if (homeIngChip !== 'все') {
@@ -395,93 +394,31 @@ function getHomeFilteredRecipes() {
     });
 }
 
-function pickRandomRecipe(pool, excludeId) {
-    if (!pool || pool.length === 0) return null;
-    if (pool.length === 1) return pool[0];
-    const candidates = excludeId ? pool.filter(r => String(r.id) !== String(excludeId)) : pool;
-    const list = candidates.length > 0 ? candidates : pool;
-    return list[Math.floor(Math.random() * list.length)];
-}
-
-function renderHome(forceNewRandom = false) {
-    const randomArea = document.getElementById('random-recipe-area');
-    const matchedArea = document.getElementById('home-matched-area');
-    if (!randomArea || !matchedArea) return;
+function renderHome() {
+    const statsEl = document.getElementById('home-recipes-stats');
+    const list = document.getElementById('home-recipe-list');
+    if (!statsEl || !list) return;
 
     const pool = getHomeFilteredRecipes();
     const isFiltered = homeIngChip !== 'все' || homeCustomIng.trim() !== '';
 
-    if (pool.length === 0) {
-        currentRandomRecipeId = null;
-        randomArea.innerHTML = `
-            <div class="empty-state" style="padding: 20px 12px;">
-                Блюд с таким продуктом пока нет в базе.<br>
-                Попробуйте выбрать другой ингредиент или добавьте свой рецепт.
-            </div>
-        `;
-        matchedArea.innerHTML = '';
+    statsEl.innerText = isFiltered
+        ? `Найдено рецептов: ${pool.length} из ${recipes.length}`
+        : `Всего в базе: ${recipes.length}`;
+
+    list.innerHTML = '';
+
+    if (recipes.length === 0) {
+        list.innerHTML = '<div class="empty-state" style="grid-column: 1 / -1;">В базе пока нет рецептов. Нажмите «+ Рецепт», чтобы добавить первый.</div>';
         return;
     }
 
-    let chosen = pool.find(r => String(r.id) === String(currentRandomRecipeId));
-    if (!chosen || forceNewRandom) {
-        chosen = pickRandomRecipe(pool, forceNewRandom ? currentRandomRecipeId : null);
-        currentRandomRecipeId = chosen ? chosen.id : null;
+    if (pool.length === 0) {
+        list.innerHTML = '<div class="empty-state" style="grid-column: 1 / -1;">По выбранному продукту или запросу рецептов не найдено.</div>';
+        return;
     }
 
-    const totalTime = chosen.steps.reduce((s, x) => s + (Number(x.time) || 0), 0);
-    const today = isInToday(chosen.id);
-    const kbjuStr = formatKbjuShort(chosen);
-    const safeId = escapeHtml(chosen.id);
-
-    randomArea.innerHTML = `
-        <div class="random-card">
-            <div class="random-label-row">
-                <span class="random-tag">🎲 ${isFiltered ? 'Случайный выбор по продукту' : 'Случайная идея дня'}</span>
-                <span class="badge">${escapeHtml(chosen.category)}</span>
-            </div>
-            <h4>${escapeHtml(chosen.name)}</h4>
-            <div class="card-meta">
-                ${totalTime > 0 ? `<span>⏱ ~${totalTime} мин.</span>` : ''}
-                <span>🍽 ${chosen.servings} порц.</span>
-                <span>🥗 ${chosen.ingredients.length} ингред.</span>
-            </div>
-            ${kbjuStr ? `<div class="kbju-line">${escapeHtml(kbjuStr)} / порц.</div>` : ''}
-            <div class="random-actions">
-                <button type="button" class="btn btn-small" data-home-cook="${safeId}">🍳 Готовить</button>
-                <button type="button" class="btn btn-small ${today ? 'btn-success' : 'btn-outline'}" data-home-today="${safeId}">
-                    ${today ? '✅ На сегодня' : '+ На сегодня'}
-                </button>
-                ${pool.length > 1 ? `<button type="button" class="btn btn-small btn-ghost" id="btn-reroll-random">🎲 Другой (${pool.length})</button>` : ''}
-            </div>
-        </div>
-    `;
-
-    if (isFiltered) {
-        matchedArea.innerHTML = `
-            <div class="matched-list-header">Все подходящие рецепты (${pool.length}):</div>
-            ${pool.map(r => {
-                const t = r.steps.reduce((s, x) => s + (Number(x.time) || 0), 0);
-                const tPart = t > 0 ? `⏱ ~${t} мин. · ` : '';
-                const k = r.calories ? ` · 🔥 ${r.calories} ккал (Б ${r.protein} / Ж ${r.fat} / У ${r.carbs})` : '';
-                const inT = isInToday(r.id);
-                const sId = escapeHtml(r.id);
-                return `
-                    <div class="matched-mini-card" data-home-cook="${sId}">
-                        <div>
-                            <div class="matched-mini-title">${escapeHtml(r.name)}</div>
-                            <div class="matched-mini-meta">${tPart}${r.servings} порц.${escapeHtml(k)}</div>
-                        </div>
-                        <button type="button" class="btn btn-small ${inT ? 'btn-success' : 'btn-outline'}" data-home-today="${sId}">
-                            ${inT ? '✅' : '+ Сегодня'}
-                        </button>
-                    </div>
-                `;
-            }).join('')}
-        `;
-    } else {
-        matchedArea.innerHTML = '';
-    }
+    pool.forEach(r => list.appendChild(buildRecipeCard(r)));
 }
 
 document.getElementById('home-ing-chips').addEventListener('click', (e) => {
@@ -490,13 +427,13 @@ document.getElementById('home-ing-chips').addEventListener('click', (e) => {
     homeIngChip = chip.dataset.ing;
     document.querySelectorAll('#home-ing-chips .ing-chip').forEach(c => c.classList.remove('active'));
     chip.classList.add('active');
-    renderHome(true);
+    renderHome();
 });
 
 document.getElementById('home-ing-input').addEventListener('input', (e) => {
     homeCustomIng = e.target.value;
     document.getElementById('btn-clear-home-ing').style.display = homeCustomIng ? 'inline-flex' : 'none';
-    renderHome(true);
+    renderHome();
 });
 
 document.getElementById('btn-clear-home-ing').addEventListener('click', () => {
@@ -504,26 +441,7 @@ document.getElementById('btn-clear-home-ing').addEventListener('click', () => {
     const input = document.getElementById('home-ing-input');
     input.value = '';
     document.getElementById('btn-clear-home-ing').style.display = 'none';
-    renderHome(true);
-});
-
-document.getElementById('home-tab').addEventListener('click', (e) => {
-    if (e.target.id === 'btn-reroll-random') {
-        renderHome(true);
-        return;
-    }
-
-    const todayBtn = e.target.closest('[data-home-today]');
-    if (todayBtn) {
-        e.stopPropagation();
-        toggleToday(todayBtn.dataset.homeToday);
-        return;
-    }
-
-    const cookTrigger = e.target.closest('[data-home-cook]');
-    if (cookTrigger) {
-        startCooking(cookTrigger.dataset.homeCook);
-    }
+    renderHome();
 });
 
 // --- Поиск, сортировка и фильтрация в базе ---
@@ -688,6 +606,7 @@ function handleRecipeGridClick(e) {
     }
 }
 
+document.getElementById('home-recipe-list').addEventListener('click', handleRecipeGridClick);
 document.getElementById('recipe-list').addEventListener('click', handleRecipeGridClick);
 document.getElementById('favorites-list').addEventListener('click', handleRecipeGridClick);
 
@@ -1594,7 +1513,7 @@ if (forceReloadBtn) {
 }
 
 function renderAll() {
-    renderHome(false);
+    renderHome();
     renderRecipes();
     renderFavorites();
     renderToday();
