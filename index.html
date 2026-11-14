@@ -68,15 +68,15 @@
             </button>
         </div>
 
-        <!-- Подбор по ингредиенту и случайный рецепт -->
+        <!-- Поиск и фильтрация по продуктам -->
         <div class="picker-box">
             <div class="picker-header">
-                <h3>🤔 Что приготовить сегодня?</h3>
-                <p>Выбери основной продукт — подберу случайное блюдо или покажу все варианты.</p>
+                <h3>📒 Рецепты и подбор по продуктам</h3>
+                <p>Выберите основной продукт или введите название в поиск — ниже отображается вся база.</p>
             </div>
 
             <div class="ingredient-chips" id="home-ing-chips">
-                <button type="button" class="ing-chip active" data-ing="все">🎲 Любое</button>
+                <button type="button" class="ing-chip active" data-ing="все">🍽 Все</button>
                 <button type="button" class="ing-chip" data-ing="курица">🍗 Курица</button>
                 <button type="button" class="ing-chip" data-ing="мясо">🥩 Мясо и фарш</button>
                 <button type="button" class="ing-chip" data-ing="рыба">🐟 Рыба</button>
@@ -87,16 +87,14 @@
             </div>
 
             <div class="home-custom-ing-row">
-                <input type="text" id="home-ing-input" class="search-box" placeholder="Или впиши свой продукт (например: гречка, грибы)...">
+                <input type="text" id="home-ing-input" class="search-box" placeholder="Поиск по названию или продукту (например: гречка, грибы)...">
                 <button type="button" class="btn btn-ghost btn-small" id="btn-clear-home-ing" style="display:none;">✕</button>
             </div>
-
-            <!-- Карточка случайного рецепта -->
-            <div id="random-recipe-area"></div>
-
-            <!-- Список всех блюд по выбранному ингредиенту -->
-            <div id="home-matched-area"></div>
         </div>
+
+        <!-- Вся база рецептов (с учётом выбранного фильтра) -->
+        <div id="home-recipes-stats" class="stats-line" style="margin-top: 14px;"></div>
+        <div id="home-recipe-list" class="recipe-grid"></div>
     </div>
 
     <!-- Вкладка: База рецептов -->
@@ -275,7 +273,7 @@
         </div>
     </div>
 
-    <script src="recipes.js?v=7"></script>
-    <script src="app.js?v=8"></script>
+    <script src="recipes.js?v=8"></script>
+    <script src="app.js?v=9"></script>
 </body>
 </html>
