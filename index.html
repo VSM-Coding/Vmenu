@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Мой Рецептник</title>
-    <link rel="stylesheet" href="style.css?v=3">
+    <link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
 
@@ -18,15 +18,89 @@
 
     <!-- Навигация -->
     <nav id="main-nav">
-        <button type="button" class="active" data-tab="recipes">📒 База</button>
+        <button type="button" class="active" data-tab="home">🏠 Главная</button>
+        <button type="button" data-tab="recipes">📒 База</button>
         <button type="button" data-tab="favorites">❤️ Избранное <span id="badge-fav" class="nav-badge empty">0</span></button>
         <button type="button" data-tab="today">🍽 Сегодня <span id="badge-today" class="nav-badge empty">0</span></button>
         <button type="button" data-tab="cart">🛒 Корзина <span id="badge-cart" class="nav-badge empty">0</span></button>
         <button type="button" data-tab="cook" id="nav-cook" style="display:none;">🍳 Готовка</button>
     </nav>
 
+    <!-- Вкладка: Главная (Кухонный пульт) -->
+    <div id="home-tab" class="container active">
+        <div class="section-header">
+            <h2>👋 Кухонный пульт</h2>
+            <div style="display: flex; gap: 8px;">
+                <button type="button" class="btn btn-outline btn-small" id="btn-home-import">💾 Бэкап</button>
+                <button type="button" class="btn btn-small" id="btn-home-new">+ Рецепт</button>
+            </div>
+        </div>
+
+        <!-- Плитки разделов -->
+        <div class="home-tiles">
+            <button type="button" class="home-tile" data-go-tab="recipes">
+                <span class="tile-icon">📒</span>
+                <div class="tile-info">
+                    <div class="tile-title">Вся база</div>
+                    <div class="tile-sub" id="home-count-recipes">0 рецептов</div>
+                </div>
+            </button>
+            <button type="button" class="home-tile" data-go-tab="favorites">
+                <span class="tile-icon">❤️</span>
+                <div class="tile-info">
+                    <div class="tile-title">Избранное</div>
+                    <div class="tile-sub" id="home-count-fav">0 блюд</div>
+                </div>
+            </button>
+            <button type="button" class="home-tile" data-go-tab="today">
+                <span class="tile-icon">🍽</span>
+                <div class="tile-info">
+                    <div class="tile-title">Сегодня</div>
+                    <div class="tile-sub" id="home-count-today">Ничего не выбрано</div>
+                </div>
+            </button>
+            <button type="button" class="home-tile" data-go-tab="cart">
+                <span class="tile-icon">🛒</span>
+                <div class="tile-info">
+                    <div class="tile-title">Корзина</div>
+                    <div class="tile-sub" id="home-count-cart">Пусто</div>
+                </div>
+            </button>
+        </div>
+
+        <!-- Подбор по ингредиенту и случайный рецепт -->
+        <div class="picker-box">
+            <div class="picker-header">
+                <h3>🤔 Что приготовить сегодня?</h3>
+                <p>Выбери основной продукт — подберу случайное блюдо или покажу все варианты.</p>
+            </div>
+
+            <div class="ingredient-chips" id="home-ing-chips">
+                <button type="button" class="ing-chip active" data-ing="все">🎲 Любое</button>
+                <button type="button" class="ing-chip" data-ing="курица">🍗 Курица</button>
+                <button type="button" class="ing-chip" data-ing="мясо">🥩 Мясо и фарш</button>
+                <button type="button" class="ing-chip" data-ing="рыба">🐟 Рыба</button>
+                <button type="button" class="ing-chip" data-ing="яйца">🥚 Яйца и творог</button>
+                <button type="button" class="ing-chip" data-ing="картофель">🥔 Картофель</button>
+                <button type="button" class="ing-chip" data-ing="сыр">🧀 Сыр</button>
+                <button type="button" class="ing-chip" data-ing="овощи">🥬 Овощи</button>
+            </div>
+
+            <div class="home-custom-ing-row">
+                <input type="text" id="home-ing-input" class="search-box" placeholder="Или впиши свой продукт (например: гречка, грибы)...">
+                <button type="button" class="btn btn-ghost btn-small" id="btn-clear-home-ing" style="display:none;">✕</button>
+            </div>
+
+            <!-- Карточка случайного рецепта -->
+            <div id="random-recipe-area"></div>
+
+            <!-- Список всех блюд по выбранному ингредиенту -->
+            <div id="home-matched-area"></div>
+        </div>
+    </div>
+
     <!-- Вкладка: База рецептов -->
-    <div id="recipes-tab" class="container active">
+    <div id="recipes-tab" class="container">
         <div class="section-header">
             <h2>База рецептов</h2>
             <div style="display: flex; gap: 8px;">
@@ -40,6 +114,8 @@
             <select id="sort-select" class="sort-select">
                 <option value="default">По порядку</option>
                 <option value="time">Быстрые</option>
+                <option value="cal_asc">Меньше ккал</option>
+                <option value="prot_desc">Больше белка</option>
                 <option value="alpha">По алфавиту</option>
             </select>
         </div>
@@ -73,6 +149,7 @@
                 <button type="button" class="btn btn-ghost btn-small" id="btn-clear-today">Очистить</button>
             </div>
         </div>
+        <div id="today-nutrition-summary"></div>
         <p style="font-size: 13px; color: var(--muted); margin-bottom: 12px;">
             Все ингредиенты из блюд ниже автоматически добавляются в раздел «Корзина» с учётом выбранных порций.
         </p>
@@ -140,19 +217,42 @@
                 <input type="text" id="r-name" placeholder="Например: Паста Карбонара">
             </div>
 
-            <div class="form-group">
-                <label>Категория</label>
-                <select id="r-category">
-                    <option value="Обед">🍲 Обед</option>
-                    <option value="Завтрак">🥞 Завтрак</option>
-                    <option value="Ужин">🥩 Ужин</option>
-                    <option value="Выпечка">🍰 Выпечка</option>
-                </select>
+            <div style="display: flex; gap: 10px;">
+                <div class="form-group" style="flex: 2;">
+                    <label>Категория</label>
+                    <select id="r-category">
+                        <option value="Обед">🍲 Обед</option>
+                        <option value="Завтрак">🥞 Завтрак</option>
+                        <option value="Ужин">🥩 Ужин</option>
+                        <option value="Выпечка">🍰 Выпечка</option>
+                    </select>
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label>Порций</label>
+                    <input type="number" id="r-servings" value="2" min="1">
+                </div>
             </div>
 
             <div class="form-group">
-                <label>Количество порций</label>
-                <input type="number" id="r-servings" value="2" min="1">
+                <label>КБЖУ на 1 порцию (необязательно)</label>
+                <div class="kbju-inputs-grid">
+                    <div>
+                        <span class="mini-label">Ккал</span>
+                        <input type="number" id="r-calories" placeholder="0" min="0">
+                    </div>
+                    <div>
+                        <span class="mini-label">Белки (г)</span>
+                        <input type="number" id="r-protein" placeholder="0" min="0" step="0.1">
+                    </div>
+                    <div>
+                        <span class="mini-label">Жиры (г)</span>
+                        <input type="number" id="r-fat" placeholder="0" min="0" step="0.1">
+                    </div>
+                    <div>
+                        <span class="mini-label">Углев. (г)</span>
+                        <input type="number" id="r-carbs" placeholder="0" min="0" step="0.1">
+                    </div>
+                </div>
             </div>
 
             <div class="form-group">
@@ -174,7 +274,7 @@
         </div>
     </div>
 
-    <script src="recipes.js?v=2"></script>
-    <script src="app.js?v=3"></script>
+    <script src="recipes.js?v=3"></script>
+    <script src="app.js?v=4"></script>
 </body>
 </html>
