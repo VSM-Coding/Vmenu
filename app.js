@@ -10,7 +10,6 @@ const baseDefaultRecipes = (typeof defaultRecipes !== 'undefined' && Array.isArr
     ? defaultRecipes
     : [];
 
-// Список ID базовых рецептов, которые пользователь осознанно удалил
 let deletedDefaultIds = [];
 try {
     const savedDeleted = JSON.parse(localStorage.getItem('deleted_default_ids'));
@@ -23,27 +22,29 @@ try {
     const saved = JSON.parse(localStorage.getItem('my_recipes'));
 
     if (Array.isArray(saved) && saved.length > 0) {
-        recipes = saved.map(r => ({
-            id: String(r.id || Date.now()),
-            name: r.name || 'Без названия',
-            category: r.category || 'Обед',
-            servings: Number(r.servings) || 2,
-            ingredients: Array.isArray(r.ingredients) ? r.ingredients : [],
-            steps: Array.isArray(r.steps) ? r.steps : []
-        }));
+        recipes = saved.map(r => {
+            const defMatch = baseDefaultRecipes.find(d => String(d.id) === String(r.id));
+            return {
+                id: String(r.id || Date.now()),
+                name: r.name || 'Без названия',
+                category: r.category || 'Обед',
+                servings: Number(r.servings) || 2,
+                calories: Number(r.calories) || (defMatch ? Number(defMatch.calories) || 0 : 0),
+                protein: Number(r.protein) || (defMatch ? Number(defMatch.protein) || 0 : 0),
+                fat: Number(r.fat) || (defMatch ? Number(defMatch.fat) || 0 : 0),
+                carbs: Number(r.carbs) || (defMatch ? Number(defMatch.carbs) || 0 : 0),
+                ingredients: Array.isArray(r.ingredients) ? r.ingredients : [],
+                steps: Array.isArray(r.steps) ? r.steps : []
+            };
+        });
 
-        // Подтягиваем новые рецепты из recipes.js, если их не удаляли вручную
-        let merged = false;
         baseDefaultRecipes.forEach(def => {
             const defId = String(def.id);
             if (!recipes.some(r => String(r.id) === defId) && !deletedDefaultIds.includes(defId)) {
                 recipes.push(def);
-                merged = true;
             }
         });
-        if (merged) {
-            localStorage.setItem('my_recipes', JSON.stringify(recipes));
-        }
+        localStorage.setItem('my_recipes', JSON.stringify(recipes));
     } else {
         recipes = [...baseDefaultRecipes];
         localStorage.setItem('my_recipes', JSON.stringify(recipes));
@@ -87,6 +88,11 @@ let currentPortions = 2;
 let completedSteps = {};
 let activeCategory = 'все';
 
+// Состояние главного экрана (фильтр по продукту и случайный рецепт)
+let homeIngChip = 'все';
+let homeCustomIng = '';
+let currentRandomRecipeId = null;
+
 // Wake Lock (удержание экрана включённым во время готовки)
 let wakeLockSentinel = null;
 let wakeLockDesired = false;
@@ -102,6 +108,11 @@ function escapeHtml(str) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
+}
+
+function formatKbjuShort(r) {
+    if (!r || !r.calories) return '';
+    return `🔥 ${r.calories} ккал · Б ${r.protein}г · Ж ${r.fat}г · У ${r.carbs}г`;
 }
 
 function scaleIngredient(ing, baseServings, targetServings) {
@@ -188,17 +199,8 @@ function toggleToday(id, customServings) {
     renderAll();
 }
 
-function updateBadges() {
-    const validFavs = favoriteIds.filter(id => recipes.some(r => String(r.id) === String(id)));
-    const badgeFav = document.getElementById('badge-fav');
-    badgeFav.innerText = validFavs.length;
-    badgeFav.classList.toggle('empty', validFavs.length === 0);
-
+function getUnboughtCount() {
     const validToday = todayMenu.filter(item => recipes.some(r => String(r.id) === String(item.recipeId)));
-    const badgeToday = document.getElementById('badge-today');
-    badgeToday.innerText = validToday.length;
-    badgeToday.classList.toggle('empty', validToday.length === 0);
-
     let unboughtCount = 0;
     validToday.forEach(entry => {
         const r = recipes.find(item => String(item.id) === String(entry.recipeId));
@@ -212,10 +214,37 @@ function updateBadges() {
     customCartItems.forEach(item => {
         if (!item.checked) unboughtCount++;
     });
+    return unboughtCount;
+}
 
+function updateBadges() {
+    const validFavs = favoriteIds.filter(id => recipes.some(r => String(r.id) === String(id)));
+    const badgeFav = document.getElementById('badge-fav');
+    badgeFav.innerText = validFavs.length;
+    badgeFav.classList.toggle('empty', validFavs.length === 0);
+
+    const validToday = todayMenu.filter(item => recipes.some(r => String(r.id) === String(item.recipeId)));
+    const badgeToday = document.getElementById('badge-today');
+    badgeToday.innerText = validToday.length;
+    badgeToday.classList.toggle('empty', validToday.length === 0);
+
+    const unboughtCount = getUnboughtCount();
     const badgeCart = document.getElementById('badge-cart');
     badgeCart.innerText = unboughtCount;
     badgeCart.classList.toggle('empty', unboughtCount === 0);
+
+    // Обновляем подписи на плитках главного экрана
+    const countRecEl = document.getElementById('home-count-recipes');
+    if (countRecEl) countRecEl.innerText = `${recipes.length} блюд`;
+
+    const countFavEl = document.getElementById('home-count-fav');
+    if (countFavEl) countFavEl.innerText = validFavs.length > 0 ? `${validFavs.length} сохр.` : 'Пока пусто';
+
+    const countTodayEl = document.getElementById('home-count-today');
+    if (countTodayEl) countTodayEl.innerText = validToday.length > 0 ? `Выбрано: ${validToday.length}` : 'Не выбрано';
+
+    const countCartEl = document.getElementById('home-count-cart');
+    if (countCartEl) countCartEl.innerText = unboughtCount > 0 ? `Купить: ${unboughtCount}` : 'Всё куплено';
 }
 
 // --- Wake Lock (удержание экрана) ---
@@ -282,7 +311,182 @@ document.getElementById('main-nav').addEventListener('click', (e) => {
     if (btn) switchTab(btn.dataset.tab);
 });
 
-// --- Поиск, сортировка и фильтрация ---
+// --- Главный экран: плитки и умный подбор ---
+document.querySelector('.home-tiles').addEventListener('click', (e) => {
+    const tile = e.target.closest('.home-tile[data-go-tab]');
+    if (tile) switchTab(tile.dataset.goTab);
+});
+
+document.getElementById('btn-home-new').addEventListener('click', () => {
+    document.getElementById('btn-open-new').click();
+});
+
+document.getElementById('btn-home-import').addEventListener('click', () => {
+    document.getElementById('btn-open-import').click();
+});
+
+const INGREDIENT_KEYWORDS = {
+    'курица': ['куриц', 'курин', 'грудка'],
+    'мясо': ['фарш', 'говяж', 'свинин', 'мяс', 'тушёнк', 'тушенк', 'бекон', 'колбас', 'сосиск', 'сервелат'],
+    'рыба': ['рыб', 'селёд', 'селед', 'сельдь', 'кальмар', 'креветк', 'лосос', 'семг', 'форел', 'тунец'],
+    'яйца': ['яйц', 'яичн', 'желтк', 'творог'],
+    'картофель': ['картош', 'картофел'],
+    'сыр': ['сыр', 'пармезан', 'фета', 'рикотта'],
+    'овощи': ['капуст', 'помидор', 'томат', 'огур', 'гриб', 'яблок', 'перец']
+};
+
+function getHomeFilteredRecipes() {
+    const custom = homeCustomIng.toLowerCase().trim();
+    return recipes.filter(r => {
+        const fullText = (r.name + ' ' + r.ingredients.join(' ')).toLowerCase();
+
+        let matchChip = true;
+        if (homeIngChip !== 'все') {
+            const keywords = INGREDIENT_KEYWORDS[homeIngChip] || [homeIngChip];
+            matchChip = keywords.some(kw => fullText.includes(kw));
+        }
+
+        let matchCustom = true;
+        if (custom) {
+            matchCustom = fullText.includes(custom);
+        }
+
+        return matchChip && matchCustom;
+    });
+}
+
+function pickRandomRecipe(pool, excludeId) {
+    if (!pool || pool.length === 0) return null;
+    if (pool.length === 1) return pool[0];
+    const candidates = excludeId ? pool.filter(r => String(r.id) !== String(excludeId)) : pool;
+    const list = candidates.length > 0 ? candidates : pool;
+    return list[Math.floor(Math.random() * list.length)];
+}
+
+function renderHome(forceNewRandom = false) {
+    const randomArea = document.getElementById('random-recipe-area');
+    const matchedArea = document.getElementById('home-matched-area');
+    if (!randomArea || !matchedArea) return;
+
+    const pool = getHomeFilteredRecipes();
+    const isFiltered = homeIngChip !== 'все' || homeCustomIng.trim() !== '';
+
+    if (pool.length === 0) {
+        currentRandomRecipeId = null;
+        randomArea.innerHTML = `
+            <div class="empty-state" style="padding: 20px 12px;">
+                Блюд с таким продуктом пока нет в базе.<br>
+                Попробуйте выбрать другой ингредиент или добавьте свой рецепт.
+            </div>
+        `;
+        matchedArea.innerHTML = '';
+        return;
+    }
+
+    let chosen = pool.find(r => String(r.id) === String(currentRandomRecipeId));
+    if (!chosen || forceNewRandom) {
+        chosen = pickRandomRecipe(pool, forceNewRandom ? currentRandomRecipeId : null);
+        currentRandomRecipeId = chosen ? chosen.id : null;
+    }
+
+    const totalTime = chosen.steps.reduce((s, x) => s + (Number(x.time) || 0), 0);
+    const today = isInToday(chosen.id);
+    const kbjuStr = formatKbjuShort(chosen);
+    const safeId = escapeHtml(chosen.id);
+
+    randomArea.innerHTML = `
+        <div class="random-card">
+            <div class="random-label-row">
+                <span class="random-tag">🎲 ${isFiltered ? 'Случайный выбор по продукту' : 'Случайная идея дня'}</span>
+                <span class="badge">${escapeHtml(chosen.category)}</span>
+            </div>
+            <h4>${escapeHtml(chosen.name)}</h4>
+            <div class="card-meta">
+                <span>⏱ ~${totalTime} мин.</span>
+                <span>🍽 ${chosen.servings} порц.</span>
+                <span>🥗 ${chosen.ingredients.length} ингред.</span>
+            </div>
+            ${kbjuStr ? `<div class="kbju-line">${escapeHtml(kbjuStr)} / порц.</div>` : ''}
+            <div class="random-actions">
+                <button type="button" class="btn btn-small" data-home-cook="${safeId}">🍳 Готовить</button>
+                <button type="button" class="btn btn-small ${today ? 'btn-success' : 'btn-outline'}" data-home-today="${safeId}">
+                    ${today ? '✅ На сегодня' : '+ На сегодня'}
+                </button>
+                ${pool.length > 1 ? `<button type="button" class="btn btn-small btn-ghost" id="btn-reroll-random">🎲 Другой (${pool.length})</button>` : ''}
+            </div>
+        </div>
+    `;
+
+    // Если выбран конкретный ингредиент, показываем ниже все подходящие блюда
+    if (isFiltered) {
+        matchedArea.innerHTML = `
+            <div class="matched-list-header">Все подходящие рецепты (${pool.length}):</div>
+            ${pool.map(r => {
+                const t = r.steps.reduce((s, x) => s + (Number(x.time) || 0), 0);
+                const k = r.calories ? ` · 🔥 ${r.calories} ккал (Б ${r.protein} / Ж ${r.fat} / У ${r.carbs})` : '';
+                const inT = isInToday(r.id);
+                const sId = escapeHtml(r.id);
+                return `
+                    <div class="matched-mini-card" data-home-cook="${sId}">
+                        <div>
+                            <div class="matched-mini-title">${escapeHtml(r.name)}</div>
+                            <div class="matched-mini-meta">⏱ ~${t} мин. · ${r.servings} порц.${escapeHtml(k)}</div>
+                        </div>
+                        <button type="button" class="btn btn-small ${inT ? 'btn-success' : 'btn-outline'}" data-home-today="${sId}">
+                            ${inT ? '✅' : '+ Сегодня'}
+                        </button>
+                    </div>
+                `;
+            }).join('')}
+        `;
+    } else {
+        matchedArea.innerHTML = '';
+    }
+}
+
+document.getElementById('home-ing-chips').addEventListener('click', (e) => {
+    const chip = e.target.closest('button[data-ing]');
+    if (!chip) return;
+    homeIngChip = chip.dataset.ing;
+    document.querySelectorAll('#home-ing-chips .ing-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    renderHome(true);
+});
+
+document.getElementById('home-ing-input').addEventListener('input', (e) => {
+    homeCustomIng = e.target.value;
+    document.getElementById('btn-clear-home-ing').style.display = homeCustomIng ? 'inline-flex' : 'none';
+    renderHome(true);
+});
+
+document.getElementById('btn-clear-home-ing').addEventListener('click', () => {
+    homeCustomIng = '';
+    const input = document.getElementById('home-ing-input');
+    input.value = '';
+    document.getElementById('btn-clear-home-ing').style.display = 'none';
+    renderHome(true);
+});
+
+document.getElementById('home-tab').addEventListener('click', (e) => {
+    if (e.target.id === 'btn-reroll-random') {
+        renderHome(true);
+        return;
+    }
+
+    const todayBtn = e.target.closest('[data-home-today]');
+    if (todayBtn) {
+        e.stopPropagation();
+        toggleToday(todayBtn.dataset.homeToday);
+        return;
+    }
+
+    const cookTrigger = e.target.closest('[data-home-cook]');
+    if (cookTrigger) {
+        startCooking(cookTrigger.dataset.homeCook);
+    }
+});
+
+// --- Поиск, сортировка и фильтрация в базе ---
 document.getElementById('search-input').addEventListener('input', renderRecipes);
 document.getElementById('sort-select').addEventListener('change', renderRecipes);
 
@@ -300,6 +504,7 @@ function buildRecipeCard(r) {
     const totalTime = r.steps.reduce((sum, s) => sum + (Number(s.time) || 0), 0);
     const fav = isFavorite(r.id);
     const today = isInToday(r.id);
+    const kbjuStr = formatKbjuShort(r);
 
     const card = document.createElement('div');
     card.className = 'recipe-card';
@@ -320,6 +525,7 @@ function buildRecipeCard(r) {
                 <span>🥗 ${r.ingredients.length} ингред.</span>
                 <span>🍽 ${r.servings} порц.</span>
             </div>
+            ${kbjuStr ? `<div class="kbju-line">${escapeHtml(kbjuStr)}</div>` : ''}
             <div class="card-actions">
                 <button type="button" class="btn btn-small ${today ? 'btn-success' : 'btn-outline'}" data-today-id="${safeId}">
                     ${today ? '✅ На сегодня' : '+ На сегодня'}
@@ -353,6 +559,10 @@ function renderRecipes() {
             const tB = b.steps.reduce((s, x) => s + (Number(x.time) || 0), 0);
             return tA - tB;
         });
+    } else if (sortBy === 'cal_asc') {
+        filtered = [...filtered].sort((a, b) => (a.calories || 9999) - (b.calories || 9999));
+    } else if (sortBy === 'prot_desc') {
+        filtered = [...filtered].sort((a, b) => (b.protein || 0) - (a.protein || 0));
     } else if (sortBy === 'alpha') {
         filtered = [...filtered].sort((a, b) => {
             const nA = a.name.replace(/^[^\p{L}\p{N}]+/u, '');
@@ -444,28 +654,53 @@ document.getElementById('favorites-list').addEventListener('click', handleRecipe
 // --- Готовим сегодня ---
 function renderToday() {
     const list = document.getElementById('today-list');
+    const summaryEl = document.getElementById('today-nutrition-summary');
     const validToday = todayMenu.filter(item => recipes.some(r => String(r.id) === String(item.recipeId)));
 
     if (validToday.length === 0) {
+        if (summaryEl) summaryEl.innerHTML = '';
         list.innerHTML = `
             <div class="empty-state">
                 На сегодня пока ничего не выбрано.<br>
-                Откройте базу рецептов и нажмите <strong>«+ На сегодня»</strong> на нужных блюдах — их продукты сразу появятся в корзине.
+                Выберите блюда на главной или в базе и нажмите <strong>«+ На сегодня»</strong> — их продукты сразу появятся в корзине.
             </div>
         `;
         return;
+    }
+
+    let sumCal = 0, sumP = 0, sumF = 0, sumC = 0;
+    validToday.forEach(entry => {
+        const r = recipes.find(item => String(item.id) === String(entry.recipeId));
+        if (r && r.calories) {
+            sumCal += Number(r.calories) || 0;
+            sumP += Number(r.protein) || 0;
+            sumF += Number(r.fat) || 0;
+            sumC += Number(r.carbs) || 0;
+        }
+    });
+
+    if (summaryEl && sumCal > 0) {
+        summaryEl.innerHTML = `
+            <div class="today-kbju-bar">
+                📊 Сумма по 1 порции каждого блюда: 🔥 ${Math.round(sumCal)} ккал · Б ${Math.round(sumP)}г · Ж ${Math.round(sumF)}г · У ${Math.round(sumC)}г
+            </div>
+        `;
+    } else if (summaryEl) {
+        summaryEl.innerHTML = '';
     }
 
     list.innerHTML = validToday.map(entry => {
         const r = recipes.find(item => String(item.id) === String(entry.recipeId));
         const safeId = escapeHtml(r.id);
         const totalTime = r.steps.reduce((s, x) => s + (Number(x.time) || 0), 0);
+        const kbjuStr = formatKbjuShort(r);
         return `
             <div class="today-card">
                 <div class="today-card-header">
                     <div>
                         <span class="badge">${escapeHtml(r.category)} · ~${totalTime} мин.</span>
                         <div class="today-card-title" data-open-cook="${safeId}" style="margin-top:6px;">${escapeHtml(r.name)}</div>
+                        ${kbjuStr ? `<div class="kbju-line">${escapeHtml(kbjuStr)} / порц.</div>` : ''}
                     </div>
                     <button type="button" class="btn btn-small btn-ghost" data-remove-today="${safeId}" style="color:#fa5252;">✕ Убрать</button>
                 </div>
@@ -635,7 +870,6 @@ document.getElementById('btn-clear-checked').addEventListener('click', () => {
     updateBadges();
 });
 
-// Скопировать некупленные продукты в мессенджер
 document.getElementById('btn-copy-cart').addEventListener('click', () => {
     const validToday = todayMenu.filter(item => recipes.some(r => String(r.id) === String(item.recipeId)));
     const lines = ['🛒 Список покупок:'];
@@ -740,6 +974,10 @@ document.getElementById('btn-open-new').addEventListener('click', () => {
     document.getElementById('r-name').value = '';
     document.getElementById('r-category').value = 'Обед';
     document.getElementById('r-servings').value = '2';
+    document.getElementById('r-calories').value = '';
+    document.getElementById('r-protein').value = '';
+    document.getElementById('r-fat').value = '';
+    document.getElementById('r-carbs').value = '';
     document.getElementById('ingredients-container').innerHTML = '';
     document.getElementById('steps-container').innerHTML = '';
     appendIngredientRow('');
@@ -756,6 +994,10 @@ function openEditRecipeModal(id) {
     document.getElementById('r-name').value = r.name;
     document.getElementById('r-category').value = r.category || 'Обед';
     document.getElementById('r-servings').value = r.servings || 2;
+    document.getElementById('r-calories').value = r.calories || '';
+    document.getElementById('r-protein').value = r.protein || '';
+    document.getElementById('r-fat').value = r.fat || '';
+    document.getElementById('r-carbs').value = r.carbs || '';
 
     const ingCont = document.getElementById('ingredients-container');
     ingCont.innerHTML = '';
@@ -790,6 +1032,11 @@ document.getElementById('btn-save-recipe').addEventListener('click', () => {
     const editId = document.getElementById('r-edit-id').value;
     const category = document.getElementById('r-category').value;
     const servings = parseInt(document.getElementById('r-servings').value, 10) || 2;
+    const calories = parseFloat(document.getElementById('r-calories').value) || 0;
+    const protein = parseFloat(document.getElementById('r-protein').value) || 0;
+    const fat = parseFloat(document.getElementById('r-fat').value) || 0;
+    const carbs = parseFloat(document.getElementById('r-carbs').value) || 0;
+
     const ingredients = Array.from(document.querySelectorAll('.ing-input')).map(i => i.value.trim()).filter(Boolean);
     const steps = Array.from(document.querySelectorAll('#steps-container .dynamic-list-item')).map(row => {
         const desc = row.querySelector('.step-desc').value.trim();
@@ -800,10 +1047,10 @@ document.getElementById('btn-save-recipe').addEventListener('click', () => {
     if (editId) {
         const idx = recipes.findIndex(r => String(r.id) === String(editId));
         if (idx !== -1) {
-            recipes[idx] = { id: String(editId), name, category, servings, ingredients, steps };
+            recipes[idx] = { id: String(editId), name, category, servings, calories, protein, fat, carbs, ingredients, steps };
         }
     } else {
-        recipes.push({ id: String(Date.now()), name, category, servings, ingredients, steps });
+        recipes.push({ id: String(Date.now()), name, category, servings, calories, protein, fat, carbs, ingredients, steps });
     }
 
     saveState();
@@ -833,6 +1080,29 @@ function startCooking(id, overrideServings) {
     renderCookingView();
 }
 
+function renderCookKbjuHtml(recipe, portions) {
+    if (!recipe || !recipe.calories) return '';
+    const mult = portions || 1;
+    const totalCal = Math.round(recipe.calories * mult);
+    const totalP = Math.round(recipe.protein * mult * 10) / 10;
+    const totalF = Math.round(recipe.fat * mult * 10) / 10;
+    const totalC = Math.round(recipe.carbs * mult * 10) / 10;
+
+    return `
+        <div class="kbju-box-cook">
+            <div style="font-weight:700; color:#d9480f;">
+                Питательность на 1 порцию${mult > 1 ? ` (всего на ${mult} порц.: ${totalCal} ккал)` : ''}:
+            </div>
+            <div class="kbju-grid-values">
+                <div class="kbju-cell"><strong>${recipe.calories}</strong><span>ккал</span></div>
+                <div class="kbju-cell"><strong>${recipe.protein} г</strong><span>белки</span></div>
+                <div class="kbju-cell"><strong>${recipe.fat} г</strong><span>жиры</span></div>
+                <div class="kbju-cell"><strong>${recipe.carbs} г</strong><span>углеводы</span></div>
+            </div>
+        </div>
+    `;
+}
+
 function renderCookingView() {
     const recipe = currentCookingRecipe;
     if (!recipe) return;
@@ -856,6 +1126,7 @@ function renderCookingView() {
             <button type="button" class="btn btn-small btn-ghost" id="cook-edit-btn">✏️ Изменить</button>
         </div>
         <div class="ingredients-box">
+            <div id="cook-kbju-container">${renderCookKbjuHtml(recipe, currentPortions)}</div>
             <div style="font-weight:700; font-size:14px;">Количество порций:</div>
             <div class="portions-control">
                 <button type="button" id="btn-port-minus">−</button>
@@ -895,6 +1166,11 @@ function recalculateIngredients() {
         const scaled = scaleIngredient(ing, currentCookingRecipe.servings, currentPortions);
         return `<li>${escapeHtml(scaled)}</li>`;
     }).join('');
+
+    const kbjuCont = document.getElementById('cook-kbju-container');
+    if (kbjuCont) {
+        kbjuCont.innerHTML = renderCookKbjuHtml(currentCookingRecipe, currentPortions);
+    }
 }
 
 document.getElementById('cook-view').addEventListener('click', (e) => {
@@ -960,7 +1236,7 @@ document.getElementById('cook-view').addEventListener('click', (e) => {
     }
 });
 
-// Разблокировка AudioContext на iOS при касании кнопки
+// Звук таймера
 function unlockAudio() {
     try {
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -1032,7 +1308,6 @@ function toggleTimer(idx, totalSeconds, btn) {
         activeTimers[idx] = { remaining: totalSeconds, endTime: null, intervalId: null };
     }
 
-    // Пауза
     if (activeTimers[idx].intervalId !== null) {
         const left = Math.max(0, Math.ceil((activeTimers[idx].endTime - Date.now()) / 1000));
         clearInterval(activeTimers[idx].intervalId);
@@ -1045,7 +1320,6 @@ function toggleTimer(idx, totalSeconds, btn) {
         return;
     }
 
-    // Если таймер уже дошёл до 0 — сбрасываем перед новым стартом
     if (activeTimers[idx].remaining <= 0) {
         activeTimers[idx].remaining = totalSeconds;
         updateTimerDisplay(idx);
@@ -1133,7 +1407,6 @@ function clearAllTimers() {
     activeTimers = {};
 }
 
-// Пересчёт таймеров и восстановление Wake Lock при возврате из фона / разблокировке экрана
 document.addEventListener('visibilitychange', () => {
     if (!document.hidden) {
         Object.keys(activeTimers).forEach(key => {
@@ -1167,6 +1440,10 @@ function normalizeRecipesList(arr) {
         name: r.name || 'Без названия',
         category: r.category || 'Обед',
         servings: Number(r.servings) || 2,
+        calories: Number(r.calories) || 0,
+        protein: Number(r.protein) || 0,
+        fat: Number(r.fat) || 0,
+        carbs: Number(r.carbs) || 0,
         ingredients: Array.isArray(r.ingredients) ? r.ingredients : [],
         steps: Array.isArray(r.steps) ? r.steps : []
     }));
@@ -1272,6 +1549,7 @@ document.getElementById('btn-do-import').addEventListener('click', () => {
 });
 
 function renderAll() {
+    renderHome(false);
     renderRecipes();
     renderFavorites();
     renderToday();
