@@ -10,6 +10,13 @@ const baseDefaultRecipes = (typeof defaultRecipes !== 'undefined' && Array.isArr
     ? defaultRecipes
     : [];
 
+// Список ID базовых рецептов, которые пользователь осознанно удалил
+let deletedDefaultIds = [];
+try {
+    const savedDeleted = JSON.parse(localStorage.getItem('deleted_default_ids'));
+    if (Array.isArray(savedDeleted)) deletedDefaultIds = savedDeleted.map(String);
+} catch (e) {}
+
 let recipes = [];
 
 try {
@@ -25,10 +32,11 @@ try {
             steps: Array.isArray(r.steps) ? r.steps : []
         }));
 
-        // Подтягиваем новые рецепты из recipes.js, если файл обновили на GitHub
+        // Подтягиваем новые рецепты из recipes.js, если их не удаляли вручную
         let merged = false;
         baseDefaultRecipes.forEach(def => {
-            if (!recipes.some(r => String(r.id) === String(def.id))) {
+            const defId = String(def.id);
+            if (!recipes.some(r => String(r.id) === defId) && !deletedDefaultIds.includes(defId)) {
                 recipes.push(def);
                 merged = true;
             }
@@ -76,24 +84,54 @@ try {
 let activeTimers = {};
 let currentCookingRecipe = null;
 let currentPortions = 2;
+let completedSteps = {};
 let activeCategory = 'все';
+
+// Wake Lock (удержание экрана включённым во время готовки)
+let wakeLockSentinel = null;
+let wakeLockDesired = false;
+
+// Звук таймера
+let sharedAudioCtx = null;
+let alarmRepeatInterval = null;
 
 function escapeHtml(str) {
     return String(str)
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 function scaleIngredient(ing, baseServings, targetServings) {
     const ratio = targetServings / (baseServings || 2);
-    return String(ing).replace(/(\d+(?:[.,]\d+)?)(?!\s*%)/g, (match) => {
-        const num = parseFloat(match.replace(',', '.'));
-        if (isNaN(num)) return match;
-        const res = Math.round(num * ratio * 10) / 10;
-        return String(res).replace('.', ',');
-    });
+    if (ratio === 1) return String(ing);
+
+    return String(ing).replace(
+        /(\d+)\s+(\d+)\s*\/\s*(\d+)|(\d+)\s*\/\s*(\d+)|(\d+(?:[.,]\d+)?)(?!\s*%)/g,
+        (match, wholeStr, mNumStr, mDenStr, numStr, denStr, decStr) => {
+            let val = null;
+            if (wholeStr && mNumStr && mDenStr) {
+                const den = parseFloat(mDenStr);
+                if (!den) return match;
+                val = (parseFloat(wholeStr) + parseFloat(mNumStr) / den) * ratio;
+            } else if (numStr && denStr) {
+                const den = parseFloat(denStr);
+                if (!den) return match;
+                val = (parseFloat(numStr) / den) * ratio;
+            } else if (decStr) {
+                val = parseFloat(decStr.replace(',', '.')) * ratio;
+            }
+            if (val === null || isNaN(val)) return match;
+
+            const rounded = Math.round(val * 100) / 100;
+            if (Math.abs(rounded - 0.25) < 0.01) return '1/4';
+            if (Math.abs(rounded - 0.5) < 0.01) return '1/2';
+            if (Math.abs(rounded - 0.75) < 0.01) return '3/4';
+            return String(Math.round(val * 10) / 10).replace('.', ',');
+        }
+    );
 }
 
 function saveState() {
@@ -102,6 +140,7 @@ function saveState() {
     localStorage.setItem('today_recipes', JSON.stringify(todayMenu));
     localStorage.setItem('cart_checked', JSON.stringify(cartChecked));
     localStorage.setItem('cart_custom_items', JSON.stringify(customCartItems));
+    localStorage.setItem('deleted_default_ids', JSON.stringify(deletedDefaultIds));
 }
 
 function isFavorite(id) {
@@ -110,6 +149,15 @@ function isFavorite(id) {
 
 function isInToday(id) {
     return todayMenu.some(item => String(item.recipeId) === String(id));
+}
+
+function clearCheckedForRecipe(recipeId) {
+    const prefix = `r_${recipeId}_`;
+    Object.keys(cartChecked).forEach(k => {
+        if (k.startsWith(prefix)) {
+            delete cartChecked[k];
+        }
+    });
 }
 
 function toggleFavorite(id) {
@@ -127,6 +175,7 @@ function toggleToday(id, customServings) {
     const strId = String(id);
     if (isInToday(strId)) {
         todayMenu = todayMenu.filter(item => String(item.recipeId) !== strId);
+        clearCheckedForRecipe(strId);
     } else {
         const r = recipes.find(item => String(item.id) === strId);
         if (!r) return;
@@ -169,6 +218,46 @@ function updateBadges() {
     badgeCart.classList.toggle('empty', unboughtCount === 0);
 }
 
+// --- Wake Lock (удержание экрана) ---
+async function requestWakeLock() {
+    if (!('wakeLock' in navigator)) return false;
+    try {
+        wakeLockSentinel = await navigator.wakeLock.request('screen');
+        wakeLockSentinel.addEventListener('release', () => {
+            wakeLockSentinel = null;
+        });
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+async function releaseWakeLock() {
+    wakeLockDesired = false;
+    if (wakeLockSentinel) {
+        try {
+            await wakeLockSentinel.release();
+        } catch (e) {}
+        wakeLockSentinel = null;
+    }
+}
+
+async function toggleWakeLock() {
+    if (!('wakeLock' in navigator)) {
+        alert('Ваш браузер не поддерживает удержание экрана включённым.');
+        return;
+    }
+    if (wakeLockDesired) {
+        await releaseWakeLock();
+    } else {
+        wakeLockDesired = true;
+        await requestWakeLock();
+    }
+    if (currentCookingRecipe) {
+        renderCookingView();
+    }
+}
+
 // --- Навигация ---
 function switchTab(tabId) {
     document.querySelectorAll('.container').forEach(c => c.classList.remove('active'));
@@ -183,6 +272,8 @@ function switchTab(tabId) {
     if (tabId !== 'cook') {
         document.getElementById('nav-cook').style.display = 'none';
         clearAllTimers();
+        stopAlarm();
+        releaseWakeLock();
     }
 }
 
@@ -205,6 +296,7 @@ document.getElementById('category-filters').addEventListener('click', (e) => {
 });
 
 function buildRecipeCard(r) {
+    const safeId = escapeHtml(r.id);
     const totalTime = r.steps.reduce((sum, s) => sum + (Number(s.time) || 0), 0);
     const fav = isFavorite(r.id);
     const today = isInToday(r.id);
@@ -216,7 +308,7 @@ function buildRecipeCard(r) {
         <div>
             <div class="card-top">
                 <span class="badge">${escapeHtml(r.category)}</span>
-                <button type="button" class="fav-btn ${fav ? 'is-fav' : ''}" data-fav-id="${r.id}" title="В избранное">
+                <button type="button" class="fav-btn ${fav ? 'is-fav' : ''}" data-fav-id="${safeId}" title="В избранное">
                     ${fav ? '❤️' : '🤍'}
                 </button>
             </div>
@@ -229,12 +321,12 @@ function buildRecipeCard(r) {
                 <span>🍽 ${r.servings} порц.</span>
             </div>
             <div class="card-actions">
-                <button type="button" class="btn btn-small ${today ? 'btn-success' : 'btn-outline'}" data-today-id="${r.id}">
+                <button type="button" class="btn btn-small ${today ? 'btn-success' : 'btn-outline'}" data-today-id="${safeId}">
                     ${today ? '✅ На сегодня' : '+ На сегодня'}
                 </button>
                 <div class="card-icon-group">
-                    <button type="button" class="btn btn-small btn-ghost" data-edit-id="${r.id}" title="Редактировать">✏️</button>
-                    <button type="button" class="btn btn-small btn-ghost" data-delete-id="${r.id}" style="color:#fa5252;" title="Удалить">🗑</button>
+                    <button type="button" class="btn btn-small btn-ghost" data-edit-id="${safeId}" title="Редактировать">✏️</button>
+                    <button type="button" class="btn btn-small btn-ghost" data-delete-id="${safeId}" style="color:#fa5252;" title="Удалить">🗑</button>
                 </div>
             </div>
         </div>
@@ -323,11 +415,17 @@ function handleRecipeGridClick(e) {
     const delBtn = e.target.closest('button[data-delete-id]');
     if (delBtn) {
         e.stopPropagation();
-        const id = delBtn.dataset.deleteId;
+        const id = String(delBtn.dataset.deleteId);
         if (confirm('Удалить этот рецепт из базы?')) {
-            recipes = recipes.filter(r => String(r.id) !== String(id));
-            favoriteIds = favoriteIds.filter(x => String(x) !== String(id));
-            todayMenu = todayMenu.filter(x => String(x.recipeId) !== String(id));
+            recipes = recipes.filter(r => String(r.id) !== id);
+            favoriteIds = favoriteIds.filter(x => String(x) !== id);
+            todayMenu = todayMenu.filter(x => String(x.recipeId) !== id);
+            clearCheckedForRecipe(id);
+
+            if (baseDefaultRecipes.some(def => String(def.id) === id) && !deletedDefaultIds.includes(id)) {
+                deletedDefaultIds.push(id);
+            }
+
             saveState();
             renderAll();
         }
@@ -360,24 +458,25 @@ function renderToday() {
 
     list.innerHTML = validToday.map(entry => {
         const r = recipes.find(item => String(item.id) === String(entry.recipeId));
+        const safeId = escapeHtml(r.id);
         const totalTime = r.steps.reduce((s, x) => s + (Number(x.time) || 0), 0);
         return `
             <div class="today-card">
                 <div class="today-card-header">
                     <div>
                         <span class="badge">${escapeHtml(r.category)} · ~${totalTime} мин.</span>
-                        <div class="today-card-title" data-open-cook="${r.id}" style="margin-top:6px;">${escapeHtml(r.name)}</div>
+                        <div class="today-card-title" data-open-cook="${safeId}" style="margin-top:6px;">${escapeHtml(r.name)}</div>
                     </div>
-                    <button type="button" class="btn btn-small btn-ghost" data-remove-today="${r.id}" style="color:#fa5252;">✕ Убрать</button>
+                    <button type="button" class="btn btn-small btn-ghost" data-remove-today="${safeId}" style="color:#fa5252;">✕ Убрать</button>
                 </div>
                 <div class="today-card-controls">
                     <div class="mini-portions">
                         <span>Порций:</span>
-                        <button type="button" data-today-port="${r.id}" data-delta="-1">−</button>
+                        <button type="button" data-today-port="${safeId}" data-delta="-1">−</button>
                         <strong>${entry.servings}</strong>
-                        <button type="button" data-today-port="${r.id}" data-delta="1">+</button>
+                        <button type="button" data-today-port="${safeId}" data-delta="1">+</button>
                     </div>
-                    <button type="button" class="btn btn-small" data-open-cook="${r.id}">🍳 Готовить →</button>
+                    <button type="button" class="btn btn-small" data-open-cook="${safeId}">🍳 Готовить →</button>
                 </div>
             </div>
         `;
@@ -419,6 +518,7 @@ document.getElementById('btn-go-cart').addEventListener('click', () => switchTab
 document.getElementById('btn-clear-today').addEventListener('click', () => {
     if (todayMenu.length === 0) return;
     if (confirm('Очистить список блюд на сегодня и убрать их продукты из корзины?')) {
+        todayMenu.forEach(entry => clearCheckedForRecipe(entry.recipeId));
         todayMenu = [];
         saveState();
         renderAll();
@@ -453,7 +553,7 @@ function renderCart() {
             html += `
                 <div class="shopping-item ${checked ? 'checked' : ''}">
                     <label class="shopping-label">
-                        <input type="checkbox" data-cart-key="${key}" ${checked ? 'checked' : ''}>
+                        <input type="checkbox" data-cart-key="${escapeHtml(key)}" ${checked ? 'checked' : ''}>
                         <span>${escapeHtml(scaled)}</span>
                     </label>
                 </div>
@@ -535,11 +635,78 @@ document.getElementById('btn-clear-checked').addEventListener('click', () => {
     updateBadges();
 });
 
+// Скопировать некупленные продукты в мессенджер
+document.getElementById('btn-copy-cart').addEventListener('click', () => {
+    const validToday = todayMenu.filter(item => recipes.some(r => String(r.id) === String(item.recipeId)));
+    const lines = ['🛒 Список покупок:'];
+    let hasItems = false;
+
+    validToday.forEach(entry => {
+        const r = recipes.find(item => String(item.id) === String(entry.recipeId));
+        if (!r) return;
+        const dishLines = [];
+        r.ingredients.forEach((ing, idx) => {
+            const key = `r_${r.id}_${idx}`;
+            if (!cartChecked[key]) {
+                dishLines.push(`• ${scaleIngredient(ing, r.servings, entry.servings)}`);
+            }
+        });
+        if (dishLines.length > 0) {
+            hasItems = true;
+            lines.push(`\n${r.name} (${entry.servings} порц.):`);
+            lines.push(...dishLines);
+        }
+    });
+
+    const unboughtCustom = customCartItems.filter(item => !item.checked);
+    if (unboughtCustom.length > 0) {
+        hasItems = true;
+        lines.push('\nДополнительно:');
+        unboughtCustom.forEach(item => lines.push(`• ${item.text}`));
+    }
+
+    if (!hasItems) {
+        alert('В корзине нет некупленных продуктов.');
+        return;
+    }
+
+    copyTextToClipboard(lines.join('\n'), '✅ Список покупок скопирован! Можно вставить в чат.');
+});
+
+function copyTextToClipboard(text, successMsg) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+            alert(successMsg);
+        }).catch(() => {
+            fallbackCopy(text, successMsg);
+        });
+    } else {
+        fallbackCopy(text, successMsg);
+    }
+}
+
+function fallbackCopy(text, successMsg) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+        document.execCommand('copy');
+        alert(successMsg);
+    } catch (e) {}
+    document.body.removeChild(ta);
+}
+
 // --- Добавление и редактирование рецепта ---
 function appendIngredientRow(val = '') {
     const row = document.createElement('div');
     row.className = 'dynamic-list-item';
-    row.innerHTML = `<input type="text" class="ing-input" placeholder="Ингредиент - количество">`;
+    row.innerHTML = `
+        <input type="text" class="ing-input" placeholder="Ингредиент - количество">
+        <button type="button" class="btn btn-small btn-ghost btn-del-row" title="Удалить строку">✕</button>
+    `;
     row.querySelector('input').value = val;
     document.getElementById('ingredients-container').appendChild(row);
 }
@@ -549,12 +716,23 @@ function appendStepRow(desc = '', time = '') {
     row.className = 'dynamic-list-item';
     row.innerHTML = `
         <input type="text" class="step-desc" placeholder="Описание шага">
-        <input type="number" class="step-time" placeholder="Мин" min="0" style="max-width: 80px;">
+        <input type="number" class="step-time" placeholder="Мин" min="0" style="max-width: 72px;">
+        <button type="button" class="btn btn-small btn-ghost btn-del-row" title="Удалить шаг">✕</button>
     `;
     row.querySelector('.step-desc').value = desc;
     row.querySelector('.step-time').value = time;
     document.getElementById('steps-container').appendChild(row);
 }
+
+document.getElementById('ingredients-container').addEventListener('click', (e) => {
+    const delBtn = e.target.closest('.btn-del-row');
+    if (delBtn) delBtn.closest('.dynamic-list-item').remove();
+});
+
+document.getElementById('steps-container').addEventListener('click', (e) => {
+    const delBtn = e.target.closest('.btn-del-row');
+    if (delBtn) delBtn.closest('.dynamic-list-item').remove();
+});
 
 document.getElementById('btn-open-new').addEventListener('click', () => {
     document.getElementById('recipe-modal-title').innerText = 'Новый рецепт';
@@ -633,7 +811,7 @@ document.getElementById('btn-save-recipe').addEventListener('click', () => {
     document.getElementById('recipe-modal').classList.remove('open');
 
     if (editId && currentCookingRecipe && String(currentCookingRecipe.id) === String(editId)) {
-        startCooking(editId);
+        startCooking(editId, currentPortions);
     }
 });
 
@@ -644,7 +822,9 @@ function startCooking(id, overrideServings) {
 
     currentCookingRecipe = recipe;
     currentPortions = overrideServings || recipe.servings || 2;
+    completedSteps = {};
     clearAllTimers();
+    stopAlarm();
 
     const navCook = document.getElementById('nav-cook');
     navCook.style.display = 'inline-flex';
@@ -670,6 +850,9 @@ function renderCookingView() {
             <button type="button" class="btn btn-small ${today ? 'btn-success' : 'btn-outline'}" id="cook-today-btn">
                 ${today ? '✅ В меню сегодня' : '+ Готовим сегодня'}
             </button>
+            <button type="button" class="btn btn-small ${wakeLockDesired ? 'btn-wake' : 'btn-ghost'}" id="cook-wakelock-btn">
+                ${wakeLockDesired ? '☀️ Экран включён' : '🌙 Не гасить экран'}
+            </button>
             <button type="button" class="btn btn-small btn-ghost" id="cook-edit-btn">✏️ Изменить</button>
         </div>
         <div class="ingredients-box">
@@ -682,16 +865,18 @@ function renderCookingView() {
             <div style="font-weight:700; font-size:14px; margin-bottom:6px;">Ингредиенты:</div>
             <ul id="ingredients-render" style="margin-left: 20px; line-height: 1.6; font-size: 15px;"></ul>
         </div>
-        <h3 style="margin-bottom: 12px;">Этапы приготовления:</h3>
+        <h3 style="margin-bottom: 4px;">Этапы приготовления:</h3>
+        <p style="font-size: 12px; color: var(--muted); margin-bottom: 12px;">Нажмите на текст шага, чтобы отметить его выполненным.</p>
         <div id="steps-render">
             ${recipe.steps.map((step, idx) => `
-                <div class="step-item">
-                    <p><strong>Шаг ${idx + 1}:</strong> ${escapeHtml(step.desc)}</p>
+                <div class="step-item ${completedSteps[idx] ? 'done' : ''}" data-step-box="${idx}">
+                    <p class="step-text" data-toggle-step="${idx}"><strong>Шаг ${idx + 1}:</strong> ${escapeHtml(step.desc)}</p>
                     ${step.time > 0 ? `
                         <div class="timer-box">
                             <div class="time-display" id="time-display-${idx}">${step.time}:00</div>
                             <button type="button" class="btn btn-small" data-timer-toggle="${idx}" data-seconds="${step.time * 60}">▶ Старт</button>
-                            <button type="button" class="btn btn-small btn-outline" data-timer-reset="${idx}" data-seconds="${step.time * 60}">Сброс</button>
+                            <button type="button" class="btn btn-small btn-outline" data-timer-add="${idx}" data-seconds="${step.time * 60}">+1 мин</button>
+                            <button type="button" class="btn btn-small btn-ghost" data-timer-reset="${idx}" data-seconds="${step.time * 60}">Сброс</button>
                         </div>
                     ` : ''}
                 </div>
@@ -725,6 +910,10 @@ document.getElementById('cook-view').addEventListener('click', (e) => {
         renderCookingView();
         return;
     }
+    if (e.target.id === 'cook-wakelock-btn') {
+        toggleWakeLock();
+        return;
+    }
     if (e.target.id === 'cook-edit-btn') {
         openEditRecipeModal(currentCookingRecipe.id);
         return;
@@ -744,9 +933,24 @@ document.getElementById('cook-view').addEventListener('click', (e) => {
         return;
     }
 
+    const stepTrigger = e.target.closest('[data-toggle-step]');
+    if (stepTrigger) {
+        const idx = Number(stepTrigger.dataset.toggleStep);
+        completedSteps[idx] = !completedSteps[idx];
+        const box = document.querySelector(`.step-item[data-step-box="${idx}"]`);
+        if (box) box.classList.toggle('done', completedSteps[idx]);
+        return;
+    }
+
     const toggleBtn = e.target.closest('button[data-timer-toggle]');
     if (toggleBtn) {
         toggleTimer(Number(toggleBtn.dataset.timerToggle), Number(toggleBtn.dataset.seconds), toggleBtn);
+        return;
+    }
+
+    const addMinBtn = e.target.closest('button[data-timer-add]');
+    if (addMinBtn) {
+        addMinuteToTimer(Number(addMinBtn.dataset.timerAdd), Number(addMinBtn.dataset.seconds));
         return;
     }
 
@@ -756,50 +960,151 @@ document.getElementById('cook-view').addEventListener('click', (e) => {
     }
 });
 
-function toggleTimer(idx, totalSeconds, btn) {
-    if (!activeTimers[idx]) {
-        activeTimers[idx] = { remaining: totalSeconds, intervalId: null };
+// Разблокировка AudioContext на iOS при касании кнопки
+function unlockAudio() {
+    try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        if (!sharedAudioCtx) {
+            sharedAudioCtx = new AudioCtx();
+        }
+        if (sharedAudioCtx.state === 'suspended') {
+            sharedAudioCtx.resume();
+        }
+    } catch (e) {}
+}
+
+function playSingleBeep() {
+    try {
+        unlockAudio();
+        if (!sharedAudioCtx) return;
+        const now = sharedAudioCtx.currentTime;
+        const osc = sharedAudioCtx.createOscillator();
+        const gain = sharedAudioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(sharedAudioCtx.destination);
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(880, now);
+        osc.frequency.setValueAtTime(1100, now + 0.18);
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+        osc.start(now);
+        osc.stop(now + 0.52);
+    } catch (e) {}
+}
+
+function triggerAlarm(idx) {
+    const banner = document.getElementById('alarm-banner');
+    const text = document.getElementById('alarm-text');
+    if (text) text.innerText = `⏰ Шаг ${idx + 1} завершён!`;
+    if (banner) banner.classList.add('active');
+
+    playSingleBeep();
+    if (navigator.vibrate) {
+        try { navigator.vibrate([300, 150, 300]); } catch (e) {}
     }
 
+    if (alarmRepeatInterval) clearInterval(alarmRepeatInterval);
+    alarmRepeatInterval = setInterval(() => {
+        playSingleBeep();
+        if (navigator.vibrate) {
+            try { navigator.vibrate([300, 150, 300]); } catch (e) {}
+        }
+    }, 2000);
+}
+
+function stopAlarm() {
+    if (alarmRepeatInterval) {
+        clearInterval(alarmRepeatInterval);
+        alarmRepeatInterval = null;
+    }
+    const banner = document.getElementById('alarm-banner');
+    if (banner) banner.classList.remove('active');
+}
+
+document.getElementById('btn-stop-alarm').addEventListener('click', stopAlarm);
+
+function toggleTimer(idx, totalSeconds, btn) {
+    unlockAudio();
+    stopAlarm();
+
+    if (!activeTimers[idx]) {
+        activeTimers[idx] = { remaining: totalSeconds, endTime: null, intervalId: null };
+    }
+
+    // Пауза
     if (activeTimers[idx].intervalId !== null) {
+        const left = Math.max(0, Math.ceil((activeTimers[idx].endTime - Date.now()) / 1000));
         clearInterval(activeTimers[idx].intervalId);
         activeTimers[idx].intervalId = null;
+        activeTimers[idx].endTime = null;
+        activeTimers[idx].remaining = left;
+        updateTimerDisplay(idx);
         btn.innerText = '▶ Продолжить';
         btn.style.background = 'var(--primary)';
         return;
     }
 
+    // Если таймер уже дошёл до 0 — сбрасываем перед новым стартом
     if (activeTimers[idx].remaining <= 0) {
         activeTimers[idx].remaining = totalSeconds;
         updateTimerDisplay(idx);
     }
 
+    activeTimers[idx].endTime = Date.now() + activeTimers[idx].remaining * 1000;
     btn.innerText = '⏸ Пауза';
     btn.style.background = 'var(--accent)';
+
     const display = document.getElementById('time-display-' + idx);
     if (display) display.style.color = 'var(--text)';
 
     activeTimers[idx].intervalId = setInterval(() => {
-        activeTimers[idx].remaining--;
-        updateTimerDisplay(idx);
+        syncTimerTick(idx, btn);
+    }, 250);
+}
 
-        if (activeTimers[idx].remaining <= 0) {
-            clearInterval(activeTimers[idx].intervalId);
-            activeTimers[idx].intervalId = null;
-            if (display) display.style.color = 'var(--success)';
-            btn.innerText = '🔄 Заново';
-            btn.style.background = 'var(--success)';
-            playAlarm();
-            alert(`⏰ Шаг ${idx + 1} завершён!`);
+function syncTimerTick(idx, btn) {
+    const timer = activeTimers[idx];
+    if (!timer || !timer.endTime) return;
+
+    const left = Math.max(0, Math.ceil((timer.endTime - Date.now()) / 1000));
+    if (left !== timer.remaining) {
+        timer.remaining = left;
+        updateTimerDisplay(idx);
+    }
+
+    if (left <= 0) {
+        clearInterval(timer.intervalId);
+        timer.intervalId = null;
+        timer.endTime = null;
+        const display = document.getElementById('time-display-' + idx);
+        if (display) display.style.color = 'var(--success)';
+        const targetBtn = btn || document.querySelector(`button[data-timer-toggle="${idx}"]`);
+        if (targetBtn) {
+            targetBtn.innerText = '🔄 Заново';
+            targetBtn.style.background = 'var(--success)';
         }
-    }, 1000);
+        triggerAlarm(idx);
+    }
+}
+
+function addMinuteToTimer(idx, totalSeconds) {
+    if (!activeTimers[idx]) {
+        activeTimers[idx] = { remaining: totalSeconds, endTime: null, intervalId: null };
+    }
+    activeTimers[idx].remaining += 60;
+    if (activeTimers[idx].endTime) {
+        activeTimers[idx].endTime += 60000;
+    }
+    updateTimerDisplay(idx);
 }
 
 function resetTimer(idx, totalSeconds) {
+    stopAlarm();
     if (activeTimers[idx] && activeTimers[idx].intervalId !== null) {
         clearInterval(activeTimers[idx].intervalId);
     }
-    activeTimers[idx] = { remaining: totalSeconds, intervalId: null };
+    activeTimers[idx] = { remaining: totalSeconds, endTime: null, intervalId: null };
     updateTimerDisplay(idx);
 
     const display = document.getElementById('time-display-' + idx);
@@ -828,21 +1133,20 @@ function clearAllTimers() {
     activeTimers = {};
 }
 
-function playAlarm() {
-    try {
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        const ctx = new AudioCtx();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(880, ctx.currentTime);
-        gain.gain.setValueAtTime(0.3, ctx.currentTime);
-        osc.start();
-        setTimeout(() => osc.stop(), 1200);
-    } catch (e) {}
-}
+// Пересчёт таймеров и восстановление Wake Lock при возврате из фона / разблокировке экрана
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+        Object.keys(activeTimers).forEach(key => {
+            const idx = Number(key);
+            if (activeTimers[idx] && activeTimers[idx].endTime) {
+                syncTimerTick(idx);
+            }
+        });
+        if (wakeLockDesired && !wakeLockSentinel) {
+            requestWakeLock();
+        }
+    }
+});
 
 // --- Резервное копирование и восстановление ---
 function downloadTextFile(filename, content, mimeType) {
@@ -872,7 +1176,6 @@ function importFromRawString(raw) {
     let cleaned = raw.trim();
     if (!cleaned) return alert('Файл или текстовое поле пустое!');
 
-    // Поддержка формата файла recipes.js (const defaultRecipes = [...];)
     cleaned = cleaned.replace(/^(const|let|var)\s+defaultRecipes\s*=\s*/i, '');
     cleaned = cleaned.replace(/;\s*$/, '');
 
@@ -880,7 +1183,11 @@ function importFromRawString(raw) {
         const parsed = JSON.parse(cleaned);
 
         if (Array.isArray(parsed)) {
+            if (recipes.length > 0 && !confirm(`Заменить текущую базу (${recipes.length} шт.) на загруженную (${parsed.length} шт.)?`)) {
+                return;
+            }
             recipes = normalizeRecipesList(parsed);
+            deletedDefaultIds = [];
             saveState();
             renderAll();
             document.getElementById('import-modal').classList.remove('open');
@@ -889,9 +1196,17 @@ function importFromRawString(raw) {
         }
 
         if (parsed && typeof parsed === 'object' && Array.isArray(parsed.recipes)) {
+            if (recipes.length > 0 && !confirm(`Заменить текущую базу (${recipes.length} шт.) на бэкап (${parsed.recipes.length} шт.)?`)) {
+                return;
+            }
             recipes = normalizeRecipesList(parsed.recipes);
             if (Array.isArray(parsed.favoriteIds)) {
                 favoriteIds = parsed.favoriteIds.map(String);
+            }
+            if (Array.isArray(parsed.deletedDefaultIds)) {
+                deletedDefaultIds = parsed.deletedDefaultIds.map(String);
+            } else {
+                deletedDefaultIds = [];
             }
             saveState();
             renderAll();
@@ -915,19 +1230,18 @@ document.getElementById('btn-close-import').addEventListener('click', () => {
     document.getElementById('import-modal').classList.remove('open');
 });
 
-// Скачать файл бэкапа (.json) на телефон
 document.getElementById('btn-download-json').addEventListener('click', () => {
     const backupData = {
         exportedAt: new Date().toISOString(),
         recipes: recipes,
-        favoriteIds: favoriteIds
+        favoriteIds: favoriteIds,
+        deletedDefaultIds: deletedDefaultIds
     };
     const dateStr = new Date().toISOString().slice(0, 10);
     const json = JSON.stringify(backupData, null, 2);
     downloadTextFile(`recepty-backup-${dateStr}.json`, json, 'application/json;charset=utf-8');
 });
 
-// Выбрать файл с телефона (.json или recipes.js)
 document.getElementById('btn-upload-file').addEventListener('click', () => {
     const fileInput = document.getElementById('import-file-input');
     fileInput.value = '';
@@ -944,20 +1258,14 @@ document.getElementById('import-file-input').addEventListener('change', (e) => {
     reader.readAsText(file, 'UTF-8');
 });
 
-// Сформировать и скопировать код для файла recipes.js на GitHub
 document.getElementById('btn-export-js').addEventListener('click', () => {
     const textarea = document.getElementById('import-textarea');
     const jsCode = `const defaultRecipes = ${JSON.stringify(recipes, null, 4)};\n`;
     textarea.value = jsCode;
     textarea.select();
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(jsCode).then(() => {
-            alert('✅ Код для recipes.js скопирован! Можешь вставить его в файл recipes.js на GitHub.');
-        }).catch(() => {});
-    }
+    copyTextToClipboard(jsCode, '✅ Код для recipes.js скопирован! Можешь вставить его в файл recipes.js на GitHub.');
 });
 
-// Ручная загрузка текста из поля
 document.getElementById('btn-do-import').addEventListener('click', () => {
     const raw = document.getElementById('import-textarea').value;
     importFromRawString(raw);
