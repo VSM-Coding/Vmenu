@@ -69,15 +69,22 @@ button, select, input, textarea {
 /* Навигация */
 nav {
     background: var(--card-bg);
-    padding: 10px 6px;
+    padding: 10px 4px;
     box-shadow: 0 2px 6px rgba(0,0,0,0.08);
     position: sticky;
     top: 0;
     z-index: 100;
     display: flex;
-    justify-content: center;
-    gap: 4px;
+    justify-content: flex-start;
+    gap: 2px;
     overflow-x: auto;
+}
+
+@media (min-width: 600px) {
+    nav {
+        justify-content: center;
+        gap: 6px;
+    }
 }
 
 nav button {
@@ -93,6 +100,7 @@ nav button {
     display: inline-flex;
     align-items: center;
     gap: 4px;
+    flex-shrink: 0;
 }
 
 nav button.active {
@@ -137,6 +145,225 @@ nav button.active {
 
 .section-header h2 {
     font-size: 21px;
+}
+
+/* Главный экран (плитки и подбор по ингредиентам) */
+.home-tiles {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.home-tile {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 13px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    text-align: left;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+}
+
+.home-tile:active {
+    background: #fff5f5;
+    border-color: var(--primary);
+}
+
+.tile-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.tile-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.tile-sub {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+}
+
+.picker-box {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.picker-header h3 {
+    font-size: 18px;
+    margin-bottom: 4px;
+}
+
+.picker-header p {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 12px;
+    line-height: 1.35;
+}
+
+.ingredient-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-bottom: 10px;
+}
+
+.ing-chip {
+    background: #f1f3f5;
+    border: 1px solid #dee2e6;
+    color: #495057;
+    padding: 7px 11px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.ing-chip.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+}
+
+.home-custom-ing-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.random-card {
+    background: linear-gradient(135deg, #fff5f5 0%, #fff9db 100%);
+    border: 1px solid #ffc9c9;
+    border-radius: 12px;
+    padding: 15px;
+}
+
+.random-label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.random-tag {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: #e03131;
+}
+
+.random-card h4 {
+    font-size: 19px;
+    margin-bottom: 8px;
+    color: var(--text);
+}
+
+.random-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+}
+
+.matched-list-header {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 16px 0 8px 0;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+}
+
+.matched-mini-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: #f8f9fa;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 8px;
+    cursor: pointer;
+}
+
+.matched-mini-title {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 3px;
+}
+
+.matched-mini-meta {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+/* КБЖУ плашки */
+.kbju-line {
+    font-size: 12px;
+    font-weight: 600;
+    color: #d9480f;
+    background: #fff4e6;
+    padding: 4px 8px;
+    border-radius: 6px;
+    margin-top: 8px;
+    display: inline-block;
+}
+
+.kbju-box-cook {
+    background: #fff;
+    border: 1px solid #ffd8a8;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    font-size: 13px;
+}
+
+.kbju-grid-values {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin-top: 6px;
+    text-align: center;
+}
+
+.kbju-cell {
+    background: #fff9db;
+    padding: 6px 4px;
+    border-radius: 6px;
+}
+
+.kbju-cell strong {
+    display: block;
+    font-size: 15px;
+    color: #e67700;
+}
+
+.kbju-cell span {
+    font-size: 11px;
+    color: var(--muted);
+}
+
+.today-kbju-bar {
+    background: #fff4e6;
+    border: 1px solid #ffd8a8;
+    color: #d9480f;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 10px;
 }
 
 /* Кнопки */
@@ -189,11 +416,6 @@ nav button.active {
     border-radius: 7px;
 }
 
-.btn-block {
-    width: 100%;
-    display: flex;
-}
-
 /* Поиск, сортировка и фильтры */
 .search-row {
     display: flex;
@@ -211,7 +433,7 @@ nav button.active {
 }
 
 .sort-select {
-    padding: 10px 10px;
+    padding: 10px 8px;
     border: 1px solid var(--border);
     border-radius: 8px;
     font-size: 13px;
@@ -267,7 +489,7 @@ nav button.active {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    min-height: 175px;
+    min-height: 185px;
 }
 
 .card-top {
@@ -462,7 +684,7 @@ nav button.active {
 
 .empty-state {
     text-align: center;
-    padding: 36px 16px;
+    padding: 32px 16px;
     background: var(--card-bg);
     border-radius: 12px;
     border: 1px dashed var(--border);
@@ -599,6 +821,19 @@ nav button.active {
     border: 1px solid var(--border);
     border-radius: 6px;
     font-size: 15px;
+}
+
+.kbju-inputs-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+}
+
+.mini-label {
+    display: block;
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 3px;
 }
 
 .dynamic-list-item {
