@@ -24,6 +24,16 @@ try {
     if (Array.isArray(saved) && saved.length > 0) {
         recipes = saved.map(r => {
             const defMatch = baseDefaultRecipes.find(d => String(d.id) === String(r.id));
+            let steps = Array.isArray(r.steps) ? r.steps : [];
+
+            // Синхронизируем очищенные таймеры для стандартных рецептов, если шаги не менялись вручную
+            if (defMatch && Array.isArray(defMatch.steps) && steps.length === defMatch.steps.length) {
+                const sameDescriptions = steps.every((s, idx) => s.desc === defMatch.steps[idx].desc);
+                if (sameDescriptions) {
+                    steps = defMatch.steps.map(s => ({ desc: s.desc, time: Number(s.time) || 0 }));
+                }
+            }
+
             return {
                 id: String(r.id || Date.now()),
                 name: r.name || 'Без названия',
@@ -34,7 +44,7 @@ try {
                 fat: Number(r.fat) || (defMatch ? Number(defMatch.fat) || 0 : 0),
                 carbs: Number(r.carbs) || (defMatch ? Number(defMatch.carbs) || 0 : 0),
                 ingredients: Array.isArray(r.ingredients) ? r.ingredients : [],
-                steps: Array.isArray(r.steps) ? r.steps : []
+                steps: steps
             };
         });
 
@@ -233,7 +243,6 @@ function updateBadges() {
     badgeCart.innerText = unboughtCount;
     badgeCart.classList.toggle('empty', unboughtCount === 0);
 
-    // Обновляем подписи на плитках главного экрана
     const countRecEl = document.getElementById('home-count-recipes');
     if (countRecEl) countRecEl.innerText = `${recipes.length} блюд`;
 
@@ -402,7 +411,7 @@ function renderHome(forceNewRandom = false) {
             </div>
             <h4>${escapeHtml(chosen.name)}</h4>
             <div class="card-meta">
-                <span>⏱ ~${totalTime} мин.</span>
+                ${totalTime > 0 ? `<span>⏱ ~${totalTime} мин.</span>` : ''}
                 <span>🍽 ${chosen.servings} порц.</span>
                 <span>🥗 ${chosen.ingredients.length} ингред.</span>
             </div>
@@ -417,12 +426,12 @@ function renderHome(forceNewRandom = false) {
         </div>
     `;
 
-    // Если выбран конкретный ингредиент, показываем ниже все подходящие блюда
     if (isFiltered) {
         matchedArea.innerHTML = `
             <div class="matched-list-header">Все подходящие рецепты (${pool.length}):</div>
             ${pool.map(r => {
                 const t = r.steps.reduce((s, x) => s + (Number(x.time) || 0), 0);
+                const tPart = t > 0 ? `⏱ ~${t} мин. · ` : '';
                 const k = r.calories ? ` · 🔥 ${r.calories} ккал (Б ${r.protein} / Ж ${r.fat} / У ${r.carbs})` : '';
                 const inT = isInToday(r.id);
                 const sId = escapeHtml(r.id);
@@ -430,7 +439,7 @@ function renderHome(forceNewRandom = false) {
                     <div class="matched-mini-card" data-home-cook="${sId}">
                         <div>
                             <div class="matched-mini-title">${escapeHtml(r.name)}</div>
-                            <div class="matched-mini-meta">⏱ ~${t} мин. · ${r.servings} порц.${escapeHtml(k)}</div>
+                            <div class="matched-mini-meta">${tPart}${r.servings} порц.${escapeHtml(k)}</div>
                         </div>
                         <button type="button" class="btn btn-small ${inT ? 'btn-success' : 'btn-outline'}" data-home-today="${sId}">
                             ${inT ? '✅' : '+ Сегодня'}
@@ -521,7 +530,7 @@ function buildRecipeCard(r) {
         </div>
         <div>
             <div class="card-meta">
-                <span>⏱ ~${totalTime} мин.</span>
+                ${totalTime > 0 ? `<span>⏱ ~${totalTime} мин.</span>` : ''}
                 <span>🥗 ${r.ingredients.length} ингред.</span>
                 <span>🍽 ${r.servings} порц.</span>
             </div>
@@ -693,12 +702,13 @@ function renderToday() {
         const r = recipes.find(item => String(item.id) === String(entry.recipeId));
         const safeId = escapeHtml(r.id);
         const totalTime = r.steps.reduce((s, x) => s + (Number(x.time) || 0), 0);
+        const timeBadge = totalTime > 0 ? ` · ~${totalTime} мин.` : '';
         const kbjuStr = formatKbjuShort(r);
         return `
             <div class="today-card">
                 <div class="today-card-header">
                     <div>
-                        <span class="badge">${escapeHtml(r.category)} · ~${totalTime} мин.</span>
+                        <span class="badge">${escapeHtml(r.category)}${timeBadge}</span>
                         <div class="today-card-title" data-open-cook="${safeId}" style="margin-top:6px;">${escapeHtml(r.name)}</div>
                         ${kbjuStr ? `<div class="kbju-line">${escapeHtml(kbjuStr)} / порц.</div>` : ''}
                     </div>
@@ -950,11 +960,11 @@ function appendStepRow(desc = '', time = '') {
     row.className = 'dynamic-list-item';
     row.innerHTML = `
         <input type="text" class="step-desc" placeholder="Описание шага">
-        <input type="number" class="step-time" placeholder="Мин" min="0" style="max-width: 72px;">
+        <input type="number" class="step-time" placeholder="Таймер" min="0" style="max-width: 78px;">
         <button type="button" class="btn btn-small btn-ghost btn-del-row" title="Удалить шаг">✕</button>
     `;
     row.querySelector('.step-desc').value = desc;
-    row.querySelector('.step-time').value = time;
+    row.querySelector('.step-time').value = time > 0 ? time : '';
     document.getElementById('steps-container').appendChild(row);
 }
 
@@ -1010,7 +1020,7 @@ function openEditRecipeModal(id) {
     const stepsCont = document.getElementById('steps-container');
     stepsCont.innerHTML = '';
     if (r.steps.length > 0) {
-        r.steps.forEach(s => appendStepRow(s.desc, s.time || ''));
+        r.steps.forEach(s => appendStepRow(s.desc, s.time || 0));
     } else {
         appendStepRow('', '');
     }
@@ -1084,9 +1094,6 @@ function renderCookKbjuHtml(recipe, portions) {
     if (!recipe || !recipe.calories) return '';
     const mult = portions || 1;
     const totalCal = Math.round(recipe.calories * mult);
-    const totalP = Math.round(recipe.protein * mult * 10) / 10;
-    const totalF = Math.round(recipe.fat * mult * 10) / 10;
-    const totalC = Math.round(recipe.carbs * mult * 10) / 10;
 
     return `
         <div class="kbju-box-cook">
