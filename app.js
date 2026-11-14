@@ -6,6 +6,8 @@ window.onerror = function(msg, url, line) {
     }
 };
 
+const DB_SCHEMA_VERSION = '2026-11-14-refined-v6';
+
 const baseDefaultRecipes = (typeof defaultRecipes !== 'undefined' && Array.isArray(defaultRecipes))
     ? defaultRecipes
     : [];
@@ -15,53 +17,6 @@ try {
     const savedDeleted = JSON.parse(localStorage.getItem('deleted_default_ids'));
     if (Array.isArray(savedDeleted)) deletedDefaultIds = savedDeleted.map(String);
 } catch (e) {}
-
-let recipes = [];
-
-try {
-    const saved = JSON.parse(localStorage.getItem('my_recipes'));
-
-    if (Array.isArray(saved) && saved.length > 0) {
-        recipes = saved.map(r => {
-            const defMatch = baseDefaultRecipes.find(d => String(d.id) === String(r.id));
-            let steps = Array.isArray(r.steps) ? r.steps : [];
-
-            // Синхронизируем очищенные таймеры для стандартных рецептов, если шаги не менялись вручную
-            if (defMatch && Array.isArray(defMatch.steps) && steps.length === defMatch.steps.length) {
-                const sameDescriptions = steps.every((s, idx) => s.desc === defMatch.steps[idx].desc);
-                if (sameDescriptions) {
-                    steps = defMatch.steps.map(s => ({ desc: s.desc, time: Number(s.time) || 0 }));
-                }
-            }
-
-            return {
-                id: String(r.id || Date.now()),
-                name: r.name || 'Без названия',
-                category: r.category || 'Обед',
-                servings: Number(r.servings) || 2,
-                calories: Number(r.calories) || (defMatch ? Number(defMatch.calories) || 0 : 0),
-                protein: Number(r.protein) || (defMatch ? Number(defMatch.protein) || 0 : 0),
-                fat: Number(r.fat) || (defMatch ? Number(defMatch.fat) || 0 : 0),
-                carbs: Number(r.carbs) || (defMatch ? Number(defMatch.carbs) || 0 : 0),
-                ingredients: Array.isArray(r.ingredients) ? r.ingredients : [],
-                steps: steps
-            };
-        });
-
-        baseDefaultRecipes.forEach(def => {
-            const defId = String(def.id);
-            if (!recipes.some(r => String(r.id) === defId) && !deletedDefaultIds.includes(defId)) {
-                recipes.push(def);
-            }
-        });
-        localStorage.setItem('my_recipes', JSON.stringify(recipes));
-    } else {
-        recipes = [...baseDefaultRecipes];
-        localStorage.setItem('my_recipes', JSON.stringify(recipes));
-    }
-} catch (e) {
-    recipes = [...baseDefaultRecipes];
-}
 
 // Избранное (массив ID)
 let favoriteIds = [];
@@ -78,6 +33,74 @@ try {
         todayMenu = savedToday.filter(item => item && item.recipeId);
     }
 } catch (e) {}
+
+let recipes = [];
+
+try {
+    const saved = JSON.parse(localStorage.getItem('my_recipes'));
+    const currentSchema = localStorage.getItem('recipe_db_version');
+    const needsSync = currentSchema !== DB_SCHEMA_VERSION;
+
+    if (Array.isArray(saved) && saved.length > 0) {
+        // Удаляем стандартные сырники (id "1") из памяти телефона
+        const cleanedSaved = saved.filter(r => !(String(r.id) === '1' && r.name === '🔥 Пышные сырники'));
+        if (cleanedSaved.length !== saved.length) {
+            favoriteIds = favoriteIds.filter(id => id !== '1');
+            todayMenu = todayMenu.filter(item => String(item.recipeId) !== '1');
+            localStorage.setItem('favorite_recipes', JSON.stringify(favoriteIds));
+            localStorage.setItem('today_recipes', JSON.stringify(todayMenu));
+        }
+
+        recipes = cleanedSaved.map(r => {
+            const defMatch = baseDefaultRecipes.find(d => String(d.id) === String(r.id));
+
+            // При обновлении версии базы подтягиваем проработанные рецепты и очищенные таймеры
+            if (defMatch && needsSync) {
+                return {
+                    id: String(defMatch.id),
+                    name: defMatch.name,
+                    category: defMatch.category || 'Обед',
+                    servings: Number(defMatch.servings) || 2,
+                    calories: Number(defMatch.calories) || 0,
+                    protein: Number(defMatch.protein) || 0,
+                    fat: Number(defMatch.fat) || 0,
+                    carbs: Number(defMatch.carbs) || 0,
+                    ingredients: Array.isArray(defMatch.ingredients) ? [...defMatch.ingredients] : [],
+                    steps: Array.isArray(defMatch.steps) ? defMatch.steps.map(s => ({ desc: s.desc, time: Number(s.time) || 0 })) : []
+                };
+            }
+
+            return {
+                id: String(r.id || Date.now()),
+                name: r.name || 'Без названия',
+                category: r.category || 'Обед',
+                servings: Number(r.servings) || 2,
+                calories: Number(r.calories) || (defMatch ? Number(defMatch.calories) || 0 : 0),
+                protein: Number(r.protein) || (defMatch ? Number(defMatch.protein) || 0 : 0),
+                fat: Number(r.fat) || (defMatch ? Number(defMatch.fat) || 0 : 0),
+                carbs: Number(r.carbs) || (defMatch ? Number(defMatch.carbs) || 0 : 0),
+                ingredients: Array.isArray(r.ingredients) ? r.ingredients : [],
+                steps: Array.isArray(r.steps) ? r.steps : []
+            };
+        });
+
+        baseDefaultRecipes.forEach(def => {
+            const defId = String(def.id);
+            if (!recipes.some(r => String(r.id) === defId) && !deletedDefaultIds.includes(defId)) {
+                recipes.push(def);
+            }
+        });
+
+        localStorage.setItem('my_recipes', JSON.stringify(recipes));
+        localStorage.setItem('recipe_db_version', DB_SCHEMA_VERSION);
+    } else {
+        recipes = [...baseDefaultRecipes];
+        localStorage.setItem('my_recipes', JSON.stringify(recipes));
+        localStorage.setItem('recipe_db_version', DB_SCHEMA_VERSION);
+    }
+} catch (e) {
+    recipes = [...baseDefaultRecipes];
+}
 
 // Состояние чекбоксов корзины и свои дополнительные продукты
 let cartChecked = {};
@@ -1554,6 +1577,13 @@ document.getElementById('btn-do-import').addEventListener('click', () => {
     const raw = document.getElementById('import-textarea').value;
     importFromRawString(raw);
 });
+
+const forceReloadBtn = document.getElementById('btn-force-reload');
+if (forceReloadBtn) {
+    forceReloadBtn.addEventListener('click', () => {
+        window.location.href = window.location.pathname + '?upd=' + Date.now();
+    });
+}
 
 function renderAll() {
     renderHome(false);
