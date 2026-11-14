@@ -4,11 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Мой Рецептник</title>
-    <link rel="stylesheet" href="style.css?v=2">
+    <link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
 
     <div id="error-banner"></div>
+
+    <!-- Баннер сработавшего таймера -->
+    <div id="alarm-banner" class="alarm-banner">
+        <span id="alarm-text">⏰ Таймер завершён!</span>
+        <button type="button" class="btn btn-small" id="btn-stop-alarm" style="background:#fff; color:#c92a2a;">🔕 Выключить</button>
+    </div>
 
     <!-- Навигация -->
     <nav id="main-nav">
@@ -77,7 +83,8 @@
     <div id="cart-tab" class="container">
         <div class="section-header">
             <h2>🛒 Корзина покупок</h2>
-            <div style="display: flex; gap: 8px;">
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <button type="button" class="btn btn-small" id="btn-copy-cart">📋 В чат</button>
                 <button type="button" class="btn btn-outline btn-small" id="btn-clear-checked">Убрать купленное</button>
             </div>
         </div>
@@ -106,7 +113,7 @@
             <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px;">
                 <button type="button" class="btn" id="btn-download-json">⬇️ Скачать файл бэкапа на телефон</button>
                 <button type="button" class="btn btn-outline" id="btn-upload-file">📂 Загрузить файл с телефона</button>
-                <input type="file" id="import-file-input" style="display: none;">
+                <input type="file" id="import-file-input" accept=".json,.js,.txt" style="display: none;">
                 <button type="button" class="btn btn-outline" id="btn-export-js">📋 Скопировать код для recipes.js</button>
             </div>
 
@@ -168,6 +175,6 @@
     </div>
 
     <script src="recipes.js?v=2"></script>
-    <script src="app.js?v=2"></script>
+    <script src="app.js?v=3"></script>
 </body>
 </html>
