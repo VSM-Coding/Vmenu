@@ -6,12 +6,14 @@ window.onerror = function(msg, url, line) {
     }
 };
 
-const SEED_VERSION = 'v2_21_recipes';
+const baseDefaultRecipes = (typeof defaultRecipes !== 'undefined' && Array.isArray(defaultRecipes))
+    ? defaultRecipes
+    : [];
+
 let recipes = [];
 
 try {
     const saved = JSON.parse(localStorage.getItem('my_recipes'));
-    const currentSeed = localStorage.getItem('recipes_seed_version');
 
     if (Array.isArray(saved) && saved.length > 0) {
         recipes = saved.map(r => ({
@@ -23,22 +25,23 @@ try {
             steps: Array.isArray(r.steps) ? r.steps : []
         }));
 
-        if (currentSeed !== SEED_VERSION) {
-            defaultRecipes.forEach(def => {
-                if (!recipes.some(r => r.id === def.id)) {
-                    recipes.push(def);
-                }
-            });
+        // Подтягиваем новые рецепты из recipes.js, если файл обновили на GitHub
+        let merged = false;
+        baseDefaultRecipes.forEach(def => {
+            if (!recipes.some(r => String(r.id) === String(def.id))) {
+                recipes.push(def);
+                merged = true;
+            }
+        });
+        if (merged) {
             localStorage.setItem('my_recipes', JSON.stringify(recipes));
-            localStorage.setItem('recipes_seed_version', SEED_VERSION);
         }
     } else {
-        recipes = [...defaultRecipes];
+        recipes = [...baseDefaultRecipes];
         localStorage.setItem('my_recipes', JSON.stringify(recipes));
-        localStorage.setItem('recipes_seed_version', SEED_VERSION);
     }
 } catch (e) {
-    recipes = [...defaultRecipes];
+    recipes = [...baseDefaultRecipes];
 }
 
 // Избранное (массив ID)
@@ -841,7 +844,68 @@ function playAlarm() {
     } catch (e) {}
 }
 
-// --- Импорт и Экспорт ---
+// --- Резервное копирование и восстановление ---
+function downloadTextFile(filename, content, mimeType) {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function normalizeRecipesList(arr) {
+    return arr.map(r => ({
+        id: String(r.id || Date.now() + Math.random()),
+        name: r.name || 'Без названия',
+        category: r.category || 'Обед',
+        servings: Number(r.servings) || 2,
+        ingredients: Array.isArray(r.ingredients) ? r.ingredients : [],
+        steps: Array.isArray(r.steps) ? r.steps : []
+    }));
+}
+
+function importFromRawString(raw) {
+    let cleaned = raw.trim();
+    if (!cleaned) return alert('Файл или текстовое поле пустое!');
+
+    // Поддержка формата файла recipes.js (const defaultRecipes = [...];)
+    cleaned = cleaned.replace(/^(const|let|var)\s+defaultRecipes\s*=\s*/i, '');
+    cleaned = cleaned.replace(/;\s*$/, '');
+
+    try {
+        const parsed = JSON.parse(cleaned);
+
+        if (Array.isArray(parsed)) {
+            recipes = normalizeRecipesList(parsed);
+            saveState();
+            renderAll();
+            document.getElementById('import-modal').classList.remove('open');
+            alert(`✅ Загружено рецептов: ${recipes.length}`);
+            return;
+        }
+
+        if (parsed && typeof parsed === 'object' && Array.isArray(parsed.recipes)) {
+            recipes = normalizeRecipesList(parsed.recipes);
+            if (Array.isArray(parsed.favoriteIds)) {
+                favoriteIds = parsed.favoriteIds.map(String);
+            }
+            saveState();
+            renderAll();
+            document.getElementById('import-modal').classList.remove('open');
+            alert(`✅ Бэкап восстановлен! Рецептов: ${recipes.length}`);
+            return;
+        }
+
+        alert('❌ Неверный формат файла или кода.');
+    } catch (e) {
+        alert('❌ Не удалось прочитать данные. Проверьте, что файл или код не повреждены.');
+    }
+}
+
 document.getElementById('btn-open-import').addEventListener('click', () => {
     document.getElementById('import-textarea').value = '';
     document.getElementById('import-modal').classList.add('open');
@@ -851,39 +915,52 @@ document.getElementById('btn-close-import').addEventListener('click', () => {
     document.getElementById('import-modal').classList.remove('open');
 });
 
-document.getElementById('btn-do-export').addEventListener('click', () => {
+// Скачать файл бэкапа (.json) на телефон
+document.getElementById('btn-download-json').addEventListener('click', () => {
+    const backupData = {
+        exportedAt: new Date().toISOString(),
+        recipes: recipes,
+        favoriteIds: favoriteIds
+    };
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const json = JSON.stringify(backupData, null, 2);
+    downloadTextFile(`recepty-backup-${dateStr}.json`, json, 'application/json;charset=utf-8');
+});
+
+// Выбрать файл с телефона (.json или recipes.js)
+document.getElementById('btn-upload-file').addEventListener('click', () => {
+    const fileInput = document.getElementById('import-file-input');
+    fileInput.value = '';
+    fileInput.click();
+});
+
+document.getElementById('import-file-input').addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+        importFromRawString(String(ev.target.result || ''));
+    };
+    reader.readAsText(file, 'UTF-8');
+});
+
+// Сформировать и скопировать код для файла recipes.js на GitHub
+document.getElementById('btn-export-js').addEventListener('click', () => {
     const textarea = document.getElementById('import-textarea');
-    const json = JSON.stringify(recipes, null, 2);
-    textarea.value = json;
+    const jsCode = `const defaultRecipes = ${JSON.stringify(recipes, null, 4)};\n`;
+    textarea.value = jsCode;
     textarea.select();
     if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(json).then(() => {
-            alert('✅ Код базы рецептов скопирован в буфер обмена!');
+        navigator.clipboard.writeText(jsCode).then(() => {
+            alert('✅ Код для recipes.js скопирован! Можешь вставить его в файл recipes.js на GitHub.');
         }).catch(() => {});
     }
 });
 
+// Ручная загрузка текста из поля
 document.getElementById('btn-do-import').addEventListener('click', () => {
-    const raw = document.getElementById('import-textarea').value.trim();
-    if (!raw) return alert('Сначала вставьте код в текстовое поле!');
-    try {
-        const parsed = JSON.parse(raw);
-        if (!Array.isArray(parsed)) return alert('❌ Неверный формат: ожидается список рецептов.');
-        recipes = parsed.map(r => ({
-            id: String(r.id || Date.now()),
-            name: r.name || 'Без названия',
-            category: r.category || 'Обед',
-            servings: Number(r.servings) || 2,
-            ingredients: Array.isArray(r.ingredients) ? r.ingredients : [],
-            steps: Array.isArray(r.steps) ? r.steps : []
-        }));
-        saveState();
-        renderAll();
-        document.getElementById('import-modal').classList.remove('open');
-        alert('✅ Рецепты успешно загружены!');
-    } catch (e) {
-        alert('❌ Ошибка чтения JSON. Проверьте, что код скопирован полностью.');
-    }
+    const raw = document.getElementById('import-textarea').value;
+    importFromRawString(raw);
 });
 
 function renderAll() {
