@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Мой Рецептник</title>
-    <link rel="stylesheet" href="style.css?v=1">
+    <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
 
@@ -24,7 +24,7 @@
         <div class="section-header">
             <h2>База рецептов</h2>
             <div style="display: flex; gap: 8px;">
-                <button type="button" class="btn btn-outline btn-small" id="btn-open-import">🔄 Импорт</button>
+                <button type="button" class="btn btn-outline btn-small" id="btn-open-import">💾 Бэкап</button>
                 <button type="button" class="btn btn-small" id="btn-open-new">+ Новый</button>
             </div>
         </div>
@@ -95,19 +95,28 @@
         <div id="cook-view" class="cooking-view"></div>
     </div>
 
-    <!-- Модалка: Импорт / Бэкап -->
+    <!-- Модалка: Резервное копирование и восстановление -->
     <div id="import-modal" class="modal-overlay">
         <div class="modal">
-            <h2 style="margin-bottom: 10px;">🔄 Импорт и Бэкап</h2>
-            <p style="font-size: 13px; color: #666; margin-bottom: 12px;">
-                Нажми «Показать мой код», чтобы скопировать свою базу рецептов, или вставь новый JSON-код в поле ниже и нажми «Загрузить».
+            <h2 style="margin-bottom: 8px;">💾 Сохранение и Бэкап</h2>
+            <p style="font-size: 13px; color: #666; margin-bottom: 12px; line-height: 1.4;">
+                Скачай файл на телефон, чтобы не потерять рецепты при очистке кэша, или скопируй код для обновления <strong>recipes.js</strong> на GitHub.
             </p>
-            <div class="form-group">
-                <textarea id="import-textarea" rows="6" placeholder="Вставь сюда JSON-код рецептов..."></textarea>
+
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px;">
+                <button type="button" class="btn" id="btn-download-json">⬇️ Скачать файл бэкапа на телефон</button>
+                <button type="button" class="btn btn-outline" id="btn-upload-file">📂 Загрузить файл с телефона</button>
+                <input type="file" id="import-file-input" style="display: none;">
+                <button type="button" class="btn btn-outline" id="btn-export-js">📋 Скопировать код для recipes.js</button>
             </div>
+
+            <div class="form-group">
+                <label>Или вставь / скопируй код вручную:</label>
+                <textarea id="import-textarea" rows="5" placeholder="Вставь сюда код из файла бэкапа или recipes.js..."></textarea>
+            </div>
+
             <div style="display: flex; flex-direction: column; gap: 8px;">
-                <button type="button" class="btn" id="btn-do-import">📥 Загрузить из поля выше</button>
-                <button type="button" class="btn btn-outline" id="btn-do-export">📋 Показать и скопировать мой код</button>
+                <button type="button" class="btn btn-success" id="btn-do-import">📥 Загрузить код из поля выше</button>
                 <button type="button" class="btn btn-ghost" id="btn-close-import">Закрыть</button>
             </div>
         </div>
@@ -158,7 +167,7 @@
         </div>
     </div>
 
-    <script src="recipes.js?v=1"></script>
-    <script src="app.js?v=1"></script>
+    <script src="recipes.js?v=2"></script>
+    <script src="app.js?v=2"></script>
 </body>
 </html>
