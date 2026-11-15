@@ -223,11 +223,6 @@
             display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
             border-top: 1px solid #f1f3f5; padding-top: 10px;
         }
-        .mini-portions { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; }
-        .mini-portions button {
-            width: 28px; height: 28px; border-radius: 7px; border: 1px solid #dee2e6;
-            background: #f8f9fa; font-weight: 700; cursor: pointer;
-        }
 
         /* Корзина покупок */
         .cart-box {
@@ -276,11 +271,6 @@
         .kbju-cell strong { display: block; font-size: 14px; color: var(--text); }
         .kbju-cell span { font-size: 11px; color: var(--muted); }
 
-        .portions-control { display: flex; align-items: center; gap: 12px; margin: 10px 0 14px; }
-        .portions-control button {
-            width: 34px; height: 34px; border-radius: 9px; border: 1px solid #dee2e6;
-            background: white; font-weight: bold; font-size: 18px; cursor: pointer;
-        }
         .step-item {
             padding: 14px; border: 1.5px solid var(--border); border-radius: 12px;
             margin-bottom: 12px; transition: 0.2s;
@@ -459,7 +449,7 @@
         </div>
         <div id="today-nutrition-summary"></div>
         <p style="font-size: 13px; color: var(--muted); margin-bottom: 12px;">
-            Все ингредиенты из блюд ниже автоматически добавляются в раздел «Корзина» с учётом выбранных порций.
+            Все ингредиенты из выбранных блюд автоматически добавляются в раздел «Корзина».
         </p>
         <div id="today-list" class="today-list"></div>
     </div>
@@ -526,24 +516,18 @@
                 <input type="text" id="r-name" placeholder="Например: Паста Карбонара">
             </div>
 
-            <div style="display: flex; gap: 10px;">
-                <div class="form-group" style="flex: 2;">
-                    <label>Категория</label>
-                    <select id="r-category">
-                        <option value="Обед">🍲 Обед</option>
-                        <option value="Завтрак">🥞 Завтрак</option>
-                        <option value="Ужин">🥩 Ужин</option>
-                        <option value="Выпечка">🍰 Выпечка</option>
-                    </select>
-                </div>
-                <div class="form-group" style="flex: 1;">
-                    <label>Порций</label>
-                    <input type="number" id="r-servings" value="2" min="1">
-                </div>
+            <div class="form-group">
+                <label>Категория</label>
+                <select id="r-category">
+                    <option value="Обед">🍲 Обед</option>
+                    <option value="Завтрак">🥞 Завтрак</option>
+                    <option value="Ужин">🥩 Ужин</option>
+                    <option value="Выпечка">🍰 Выпечка</option>
+                </select>
             </div>
 
             <div class="form-group">
-                <label>КБЖУ на 1 порцию (необязательно)</label>
+                <label>КБЖУ на блюдо (необязательно)</label>
                 <div class="kbju-inputs-grid">
                     <div>
                         <span class="mini-label">Ккал</span>
@@ -597,7 +581,6 @@
                 id: "101",
                 name: "🍚 Поккымпаб",
                 category: "Ужин",
-                servings: 6,
                 calories: 480,
                 protein: 18,
                 fat: 20,
@@ -626,7 +609,6 @@
                 id: "102",
                 name: "🌯 Домашняя шаурма",
                 category: "Обед",
-                servings: 2,
                 calories: 670,
                 protein: 43,
                 fat: 29,
@@ -654,7 +636,7 @@
             }
         ];
 
-        const DB_SCHEMA_VERSION = '2026-11-15-single-v1';
+        const DB_SCHEMA_VERSION = '2026-11-15-no-portions-v1';
         const LEGACY_DEFAULT_IDS = [
             "1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
             "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21"
@@ -678,7 +660,9 @@
         try {
             const savedToday = JSON.parse(localStorage.getItem('today_recipes'));
             if (Array.isArray(savedToday)) {
-                todayMenu = savedToday.filter(item => item && item.recipeId);
+                todayMenu = savedToday.filter(item => item && item.recipeId).map(item => ({
+                    recipeId: String(item.recipeId)
+                }));
             }
         } catch (e) {}
 
@@ -711,7 +695,6 @@
                             id: String(defMatch.id),
                             name: defMatch.name,
                             category: defMatch.category || 'Обед',
-                            servings: Number(defMatch.servings) || 2,
                             calories: Number(defMatch.calories) || 0,
                             protein: Number(defMatch.protein) || 0,
                             fat: Number(defMatch.fat) || 0,
@@ -725,7 +708,6 @@
                         id: String(r.id || Date.now()),
                         name: r.name || 'Без названия',
                         category: r.category || 'Обед',
-                        servings: Number(r.servings) || 2,
                         calories: Number(r.calories) || (defMatch ? Number(defMatch.calories) || 0 : 0),
                         protein: Number(r.protein) || (defMatch ? Number(defMatch.protein) || 0 : 0),
                         fat: Number(r.fat) || (defMatch ? Number(defMatch.fat) || 0 : 0),
@@ -767,7 +749,6 @@
 
         let activeTimers = {};
         let currentCookingRecipe = null;
-        let currentPortions = 2;
         let completedSteps = {};
         let activeCategory = 'все';
 
@@ -792,36 +773,6 @@
         function formatKbjuShort(r) {
             if (!r || !r.calories) return '';
             return `🔥 ${r.calories} ккал · Б ${r.protein}г · Ж ${r.fat}г · У ${r.carbs}г`;
-        }
-
-        function scaleIngredient(ing, baseServings, targetServings) {
-            const ratio = targetServings / (baseServings || 2);
-            if (ratio === 1) return String(ing);
-
-            return String(ing).replace(
-                /(\d+)\s+(\d+)\s*\/\s*(\d+)|(\d+)\s*\/\s*(\d+)|(\d+(?:[.,]\d+)?)(?!\s*%)/g,
-                (match, wholeStr, mNumStr, mDenStr, numStr, denStr, decStr) => {
-                    let val = null;
-                    if (wholeStr && mNumStr && mDenStr) {
-                        const den = parseFloat(mDenStr);
-                        if (!den) return match;
-                        val = (parseFloat(wholeStr) + parseFloat(mNumStr) / den) * ratio;
-                    } else if (numStr && denStr) {
-                        const den = parseFloat(denStr);
-                        if (!den) return match;
-                        val = (parseFloat(numStr) / den) * ratio;
-                    } else if (decStr) {
-                        val = parseFloat(decStr.replace(',', '.')) * ratio;
-                    }
-                    if (val === null || isNaN(val)) return match;
-
-                    const rounded = Math.round(val * 100) / 100;
-                    if (Math.abs(rounded - 0.25) < 0.01) return '1/4';
-                    if (Math.abs(rounded - 0.5) < 0.01) return '1/2';
-                    if (Math.abs(rounded - 0.75) < 0.01) return '3/4';
-                    return String(Math.round(val * 10) / 10).replace('.', ',');
-                }
-            );
         }
 
         function saveState() {
@@ -861,7 +812,7 @@
             renderAll();
         }
 
-        function toggleToday(id, customServings) {
+        function toggleToday(id) {
             const strId = String(id);
             if (isInToday(strId)) {
                 todayMenu = todayMenu.filter(item => String(item.recipeId) !== strId);
@@ -869,10 +820,7 @@
             } else {
                 const r = recipes.find(item => String(item.id) === strId);
                 if (!r) return;
-                todayMenu.push({
-                    recipeId: strId,
-                    servings: customServings || r.servings || 2
-                });
+                todayMenu.push({ recipeId: strId });
             }
             saveState();
             renderAll();
@@ -1120,7 +1068,6 @@
                     <div class="card-meta">
                         ${totalTime > 0 ? `<span>⏱ ~${totalTime} мин.</span>` : ''}
                         <span>🥗 ${r.ingredients.length} ингред.</span>
-                        <span>🍽 ${r.servings} порц.</span>
                     </div>
                     ${kbjuStr ? `<div class="kbju-line">${escapeHtml(kbjuStr)}</div>` : ''}
                     <div class="card-actions">
@@ -1280,7 +1227,7 @@
             if (summaryEl && sumCal > 0) {
                 summaryEl.innerHTML = `
                     <div class="today-kbju-bar">
-                        📊 Сумма по 1 порции каждого блюда: 🔥 ${Math.round(sumCal)} ккал · Б ${Math.round(sumP)}г · Ж ${Math.round(sumF)}г · У ${Math.round(sumC)}г
+                        📊 Сумма выбранных блюд: 🔥 ${Math.round(sumCal)} ккал · Б ${Math.round(sumP)}г · Ж ${Math.round(sumF)}г · У ${Math.round(sumC)}г
                     </div>
                 `;
             } else if (summaryEl) {
@@ -1299,17 +1246,12 @@
                             <div>
                                 <span class="badge">${escapeHtml(r.category)}${timeBadge}</span>
                                 <div class="today-card-title" data-open-cook="${safeId}" style="margin-top:6px;">${escapeHtml(r.name)}</div>
-                                ${kbjuStr ? `<div class="kbju-line">${escapeHtml(kbjuStr)} / порц.</div>` : ''}
+                                ${kbjuStr ? `<div class="kbju-line" style="margin-top:6px; margin-bottom:0;">${escapeHtml(kbjuStr)}</div>` : ''}
                             </div>
                             <button type="button" class="btn btn-small btn-ghost" data-remove-today="${safeId}" style="color:#fa5252;">✕ Убрать</button>
                         </div>
                         <div class="today-card-controls">
-                            <div class="mini-portions">
-                                <span>Порций:</span>
-                                <button type="button" data-today-port="${safeId}" data-delta="-1">−</button>
-                                <strong>${entry.servings}</strong>
-                                <button type="button" data-today-port="${safeId}" data-delta="1">+</button>
-                            </div>
+                            <span style="font-size:13px; color:var(--muted);">🥗 ${r.ingredients.length} ингред.</span>
                             <button type="button" class="btn btn-small" data-open-cook="${safeId}">🍳 Готовить →</button>
                         </div>
                     </div>
@@ -1324,26 +1266,9 @@
                 return;
             }
 
-            const portBtn = e.target.closest('button[data-today-port]');
-            if (portBtn) {
-                const id = String(portBtn.dataset.todayPort);
-                const delta = Number(portBtn.dataset.delta);
-                const entry = todayMenu.find(item => String(item.recipeId) === id);
-                if (entry) {
-                    entry.servings = Math.max(1, (entry.servings || 2) + delta);
-                    saveState();
-                    renderToday();
-                    renderCart();
-                    updateBadges();
-                }
-                return;
-            }
-
             const cookTrigger = e.target.closest('[data-open-cook]');
             if (cookTrigger) {
-                const id = cookTrigger.dataset.openCook;
-                const entry = todayMenu.find(item => String(item.recipeId) === String(id));
-                startCooking(id, entry ? entry.servings : undefined);
+                startCooking(cookTrigger.dataset.openCook);
             }
         });
 
@@ -1379,16 +1304,15 @@
             validToday.forEach(entry => {
                 const r = recipes.find(item => String(item.id) === String(entry.recipeId));
                 if (!r) return;
-                html += `<div class="cart-group-title">${escapeHtml(r.name)} (${entry.servings} порц.)</div>`;
+                html += `<div class="cart-group-title">${escapeHtml(r.name)}</div>`;
                 r.ingredients.forEach((ing, idx) => {
                     const key = `r_${r.id}_${idx}`;
                     const checked = Boolean(cartChecked[key]);
-                    const scaled = scaleIngredient(ing, r.servings, entry.servings);
                     html += `
                         <div class="shopping-item ${checked ? 'checked' : ''}">
                             <label class="shopping-label">
                                 <input type="checkbox" data-cart-key="${escapeHtml(key)}" ${checked ? 'checked' : ''}>
-                                <span>${escapeHtml(scaled)}</span>
+                                <span>${escapeHtml(ing)}</span>
                             </label>
                         </div>
                     `;
@@ -1481,12 +1405,12 @@
                 r.ingredients.forEach((ing, idx) => {
                     const key = `r_${r.id}_${idx}`;
                     if (!cartChecked[key]) {
-                        dishLines.push(`• ${scaleIngredient(ing, r.servings, entry.servings)}`);
+                        dishLines.push(`• ${ing}`);
                     }
                 });
                 if (dishLines.length > 0) {
                     hasItems = true;
-                    lines.push(`\n${r.name} (${entry.servings} порц.):`);
+                    lines.push(`\n${r.name}:`);
                     lines.push(...dishLines);
                 }
             });
@@ -1572,7 +1496,6 @@
             document.getElementById('r-edit-id').value = '';
             document.getElementById('r-name').value = '';
             document.getElementById('r-category').value = 'Обед';
-            document.getElementById('r-servings').value = '2';
             document.getElementById('r-calories').value = '';
             document.getElementById('r-protein').value = '';
             document.getElementById('r-fat').value = '';
@@ -1592,7 +1515,6 @@
             document.getElementById('r-edit-id').value = r.id;
             document.getElementById('r-name').value = r.name;
             document.getElementById('r-category').value = r.category || 'Обед';
-            document.getElementById('r-servings').value = r.servings || 2;
             document.getElementById('r-calories').value = r.calories || '';
             document.getElementById('r-protein').value = r.protein || '';
             document.getElementById('r-fat').value = r.fat || '';
@@ -1630,7 +1552,6 @@
 
             const editId = document.getElementById('r-edit-id').value;
             const category = document.getElementById('r-category').value;
-            const servings = parseInt(document.getElementById('r-servings').value, 10) || 2;
             const calories = parseFloat(document.getElementById('r-calories').value) || 0;
             const protein = parseFloat(document.getElementById('r-protein').value) || 0;
             const fat = parseFloat(document.getElementById('r-fat').value) || 0;
@@ -1646,10 +1567,10 @@
             if (editId) {
                 const idx = recipes.findIndex(r => String(r.id) === String(editId));
                 if (idx !== -1) {
-                    recipes[idx] = { id: String(editId), name, category, servings, calories, protein, fat, carbs, ingredients, steps };
+                    recipes[idx] = { id: String(editId), name, category, calories, protein, fat, carbs, ingredients, steps };
                 }
             } else {
-                recipes.push({ id: String(Date.now()), name, category, servings, calories, protein, fat, carbs, ingredients, steps });
+                recipes.push({ id: String(Date.now()), name, category, calories, protein, fat, carbs, ingredients, steps });
             }
 
             saveState();
@@ -1657,17 +1578,16 @@
             document.getElementById('recipe-modal').classList.remove('open');
 
             if (editId && currentCookingRecipe && String(currentCookingRecipe.id) === String(editId)) {
-                startCooking(editId, currentPortions);
+                startCooking(editId);
             }
         });
 
         // --- Режим готовки и таймеры ---
-        function startCooking(id, overrideServings) {
+        function startCooking(id) {
             const recipe = recipes.find(r => String(r.id) === String(id));
             if (!recipe) return;
 
             currentCookingRecipe = recipe;
-            currentPortions = overrideServings || recipe.servings || 2;
             completedSteps = {};
             clearAllTimers();
             stopAlarm();
@@ -1679,15 +1599,13 @@
             renderCookingView();
         }
 
-        function renderCookKbjuHtml(recipe, portions) {
+        function renderCookKbjuHtml(recipe) {
             if (!recipe || !recipe.calories) return '';
-            const mult = portions || 1;
-            const totalCal = Math.round(recipe.calories * mult);
 
             return `
                 <div class="kbju-box-cook">
                     <div style="font-weight:700; color:#d9480f;">
-                        Питательность на 1 порцию${mult > 1 ? ` (всего на ${mult} порц.: ${totalCal} ккал)` : ''}:
+                        Питательность блюда:
                     </div>
                     <div class="kbju-grid-values">
                         <div class="kbju-cell"><strong>${recipe.calories}</strong><span>ккал</span></div>
@@ -1722,15 +1640,11 @@
                     <button type="button" class="btn btn-small btn-ghost" id="cook-edit-btn">✏️ Изменить</button>
                 </div>
                 <div class="ingredients-box">
-                    <div id="cook-kbju-container">${renderCookKbjuHtml(recipe, currentPortions)}</div>
-                    <div style="font-weight:700; font-size:14px;">Количество порций:</div>
-                    <div class="portions-control">
-                        <button type="button" id="btn-port-minus">−</button>
-                        <span id="portion-count" style="font-weight:700; min-width:20px; text-align:center;">${currentPortions}</span>
-                        <button type="button" id="btn-port-plus">+</button>
-                    </div>
+                    ${renderCookKbjuHtml(recipe)}
                     <div style="font-weight:700; font-size:14px; margin-bottom:6px;">Ингредиенты:</div>
-                    <ul id="ingredients-render" style="margin-left: 20px; line-height: 1.6; font-size: 15px;"></ul>
+                    <ul style="margin-left: 20px; line-height: 1.6; font-size: 15px;">
+                        ${recipe.ingredients.map(ing => `<li>${escapeHtml(ing)}</li>`).join('')}
+                    </ul>
                 </div>
                 <h3 style="margin-bottom: 4px;">Этапы приготовления:</h3>
                 <p style="font-size: 12px; color: var(--muted); margin-bottom: 12px;">Нажмите на текст шага, чтобы отметить его выполненным.</p>
@@ -1750,23 +1664,6 @@
                     `).join('')}
                 </div>
             `;
-
-            recalculateIngredients();
-        }
-
-        function recalculateIngredients() {
-            const ul = document.getElementById('ingredients-render');
-            if (!ul || !currentCookingRecipe) return;
-
-            ul.innerHTML = currentCookingRecipe.ingredients.map(ing => {
-                const scaled = scaleIngredient(ing, currentCookingRecipe.servings, currentPortions);
-                return `<li>${escapeHtml(scaled)}</li>`;
-            }).join('');
-
-            const kbjuCont = document.getElementById('cook-kbju-container');
-            if (kbjuCont) {
-                kbjuCont.innerHTML = renderCookKbjuHtml(currentCookingRecipe, currentPortions);
-            }
         }
 
         document.getElementById('cook-view').addEventListener('click', (e) => {
@@ -1778,7 +1675,7 @@
                 return;
             }
             if (e.target.id === 'cook-today-btn') {
-                toggleToday(currentCookingRecipe.id, currentPortions);
+                toggleToday(currentCookingRecipe.id);
                 renderCookingView();
                 return;
             }
@@ -1788,20 +1685,6 @@
             }
             if (e.target.id === 'cook-edit-btn') {
                 openEditRecipeModal(currentCookingRecipe.id);
-                return;
-            }
-            if (e.target.id === 'btn-port-minus') {
-                if (currentPortions > 1) {
-                    currentPortions--;
-                    document.getElementById('portion-count').innerText = currentPortions;
-                    recalculateIngredients();
-                }
-                return;
-            }
-            if (e.target.id === 'btn-port-plus') {
-                currentPortions++;
-                document.getElementById('portion-count').innerText = currentPortions;
-                recalculateIngredients();
                 return;
             }
 
@@ -2035,7 +1918,6 @@
                 id: String(r.id || Date.now() + Math.random()),
                 name: r.name || 'Без названия',
                 category: r.category || 'Обед',
-                servings: Number(r.servings) || 2,
                 calories: Number(r.calories) || 0,
                 protein: Number(r.protein) || 0,
                 fat: Number(r.fat) || 0,
