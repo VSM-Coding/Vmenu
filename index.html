@@ -31,13 +31,7 @@
             document.getElementById('pwa-manifest').href = URL.createObjectURL(blob);
 
             if ('serviceWorker' in navigator) {
-                const swCode = `
-                    self.addEventListener('install', e => self.skipWaiting());
-                    self.addEventListener('activate', e => e.waitUntil(clients.claim()));
-                    self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => new Response(''))));
-                `;
-                const swBlob = new Blob([swCode], { type: 'application/javascript' });
-                navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(() => {});
+                navigator.serviceWorker.register('./sw.js').catch(() => {});
             }
         })();
     </script>
