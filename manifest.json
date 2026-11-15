@@ -1,0 +1,17 @@
+{
+  "name": "Мой Рецептник",
+  "short_name": "Рецептник",
+  "start_url": "/Vmer/index.html",
+  "scope": "/Vmer/",
+  "display": "standalone",
+  "background_color": "#f8f9fa",
+  "theme_color": "#ff6b35",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/1830/1830839.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
