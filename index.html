@@ -105,7 +105,6 @@
         .btn-wake { background: #fff9db; border: 1.5px solid #fcc419; color: #e67700; }
         .btn-small { padding: 6px 11px; font-size: 13px; border-radius: 8px; }
 
-        /* Главная: плитки и подбор */
         .home-tiles {
             display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px;
         }
@@ -205,7 +204,6 @@
             font-size: 14px; line-height: 1.5;
         }
 
-        /* Вкладка Сегодня */
         .today-kbju-bar {
             background: #fff0ea; border: 1px solid #ffd8c9; color: #d9480f;
             padding: 10px 14px; border-radius: 12px; font-size: 13px; font-weight: 600;
@@ -224,7 +222,6 @@
             border-top: 1px solid #f1f3f5; padding-top: 10px;
         }
 
-        /* Корзина покупок */
         .cart-box {
             background: var(--card); border-radius: 16px; padding: 16px;
             box-shadow: 0 3px 12px rgba(0,0,0,0.04); border: 1px solid var(--border);
@@ -252,7 +249,6 @@
         }
         .shopping-item.checked .shopping-label span { text-decoration: line-through; color: #adb5bd; }
 
-        /* Режим готовки */
         .cooking-view {
             background: var(--card); border-radius: 16px; padding: 20px;
             box-shadow: 0 4px 16px rgba(0,0,0,0.04);
@@ -285,7 +281,6 @@
         }
         .time-display { font-family: monospace; font-size: 20px; font-weight: bold; min-width: 65px; }
 
-        /* Модалки */
         .modal-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.55);
             display: none; justify-content: center; align-items: center; z-index: 1000; padding: 14px;
@@ -310,13 +305,11 @@
 
     <div id="error-banner"></div>
 
-    <!-- Баннер сработавшего таймера -->
     <div id="alarm-banner" class="alarm-banner">
         <span id="alarm-text">⏰ Таймер завершён!</span>
         <button type="button" class="btn btn-small" id="btn-stop-alarm" style="background:#fff; color:#c92a2a;">🔕 Выключить</button>
     </div>
 
-    <!-- Навигация -->
     <nav id="main-nav">
         <button type="button" class="active" data-tab="home">🏠 Главная</button>
         <button type="button" data-tab="recipes">📒 База</button>
@@ -326,7 +319,6 @@
         <button type="button" data-tab="cook" id="nav-cook" style="display:none;">🍳 Готовка</button>
     </nav>
 
-    <!-- Вкладка: Главная (Кухонный пульт) -->
     <div id="home-tab" class="container active">
         <div class="section-header">
             <h2>👋 Кухонный пульт</h2>
@@ -336,7 +328,6 @@
             </div>
         </div>
 
-        <!-- Плитки разделов -->
         <div class="home-tiles">
             <button type="button" class="home-tile" data-go-tab="recipes">
                 <span class="tile-icon">📒</span>
@@ -368,7 +359,6 @@
             </button>
         </div>
 
-        <!-- Поиск и фильтрация по продуктам -->
         <div class="picker-box">
             <div class="picker-header">
                 <h3>📒 Рецепты и подбор по продуктам</h3>
@@ -392,12 +382,10 @@
             </div>
         </div>
 
-        <!-- Вся база рецептов (с учётом выбранного фильтра) -->
         <div id="home-recipes-stats" class="stats-line" style="margin-top: 14px;"></div>
         <div id="home-recipe-list" class="recipe-grid"></div>
     </div>
 
-    <!-- Вкладка: База рецептов -->
     <div id="recipes-tab" class="container">
         <div class="section-header">
             <h2>База рецептов</h2>
@@ -430,7 +418,6 @@
         <div id="recipe-list" class="recipe-grid"></div>
     </div>
 
-    <!-- Вкладка: Избранное -->
     <div id="favorites-tab" class="container">
         <div class="section-header">
             <h2>❤️ Избранные рецепты</h2>
@@ -438,7 +425,6 @@
         <div id="favorites-list" class="recipe-grid"></div>
     </div>
 
-    <!-- Вкладка: Готовим сегодня -->
     <div id="today-tab" class="container">
         <div class="section-header">
             <h2>🍽 Готовим сегодня</h2>
@@ -454,7 +440,6 @@
         <div id="today-list" class="today-list"></div>
     </div>
 
-    <!-- Вкладка: Корзина -->
     <div id="cart-tab" class="container">
         <div class="section-header">
             <h2>🛒 Корзина покупок</h2>
@@ -472,40 +457,40 @@
         </div>
     </div>
 
-    <!-- Вкладка: Режим готовки -->
     <div id="cook-tab" class="container">
         <div id="cook-view" class="cooking-view"></div>
     </div>
 
-    <!-- Модалка: Резервное копирование и восстановление -->
     <div id="import-modal" class="modal-overlay">
         <div class="modal">
-            <h2 style="margin-bottom: 8px;">💾 Сохранение и Бэкап</h2>
+            <h2 style="margin-bottom: 8px;">💾 Рецепты и Бэкап</h2>
             <p style="font-size: 13px; color: #666; margin-bottom: 12px; line-height: 1.4;">
-                Скачай файл на телефон, чтобы не потерять рецепты при очистке кэша, или скопируй код для переноса.
+                Вставь сюда код нового рецепта или сохрани резервную копию всей базы на телефон.
             </p>
 
+            <div class="form-group">
+                <label>Вставь код рецепта или базы:</label>
+                <textarea id="import-textarea" rows="5" placeholder="Вставь сюда код рецепта..."></textarea>
+            </div>
+
             <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px;">
+                <button type="button" class="btn btn-success" id="btn-append-recipe">➕ Добавить рецепт к базе</button>
+                <button type="button" class="btn btn-outline" id="btn-do-import">📥 Заменить всю базу из кода</button>
+            </div>
+
+            <hr style="border: none; border-top: 1px solid var(--border); margin: 12px 0;">
+
+            <div style="display: flex; flex-direction: column; gap: 8px;">
                 <button type="button" class="btn" id="btn-download-json">⬇️ Скачать файл бэкапа на телефон</button>
                 <button type="button" class="btn btn-outline" id="btn-upload-file">📂 Загрузить файл с телефона</button>
                 <input type="file" id="import-file-input" accept=".json,.js,.txt" style="display: none;">
-                <button type="button" class="btn btn-outline" id="btn-export-js">📋 Скопировать код базы</button>
+                <button type="button" class="btn btn-outline" id="btn-export-js">📋 Скопировать код всей базы</button>
                 <button type="button" class="btn btn-ghost" id="btn-force-reload">🔄 Обновить версию сайта (сброс кэша)</button>
-            </div>
-
-            <div class="form-group">
-                <label>Или вставь / скопируй код вручную:</label>
-                <textarea id="import-textarea" rows="5" placeholder="Вставь сюда код из файла бэкапа..."></textarea>
-            </div>
-
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-                <button type="button" class="btn btn-success" id="btn-do-import">📥 Загрузить код из поля выше</button>
                 <button type="button" class="btn btn-ghost" id="btn-close-import">Закрыть</button>
             </div>
         </div>
     </div>
 
-    <!-- Модалка: Создание / Редактирование рецепта -->
     <div id="recipe-modal" class="modal-overlay">
         <div class="modal">
             <h2 id="recipe-modal-title" style="margin-bottom: 14px;">Новый рецепт</h2>
@@ -633,10 +618,32 @@
                     { desc: "Разверните лаваш и выложите начинку слоями: сначала листья салата (они защитят лаваш от влаги), затем помидоры и огурец, полейте чесночным соусом, сверху выложите тёплую курицу и морковь по-корейски.", time: 0 },
                     { desc: "Подогните края лаваша, плотно сверните рулетом и при желании подрумяньте по 1 минуте с каждой стороны на сухой сковороде до хрустящей корочки.", time: 0 }
                 ]
+            },
+            {
+                id: "103",
+                name: "🥞 Бендерики",
+                category: "Ужин",
+                calories: 2110,
+                protein: 170,
+                fat: 154,
+                carbs: 12,
+                ingredients: [
+                    "Куриное филе - 500–900 г",
+                    "Лук репчатый - 1–2 шт. (средних) или 1 большая",
+                    "Яйца - 2 шт.",
+                    "Майонез - 200 мл",
+                    "Соль, перец - по вкусу"
+                ],
+                steps: [
+                    { desc: "Мелко нарежьте куриное филе кубиком и измельчите лук.", time: 0 },
+                    { desc: "Добавьте 2 яйца, 200 мл майонеза, соль и перец. Тщательно перемешайте — масса должна получиться не жидкой и не густой.", time: 0 },
+                    { desc: "Оставьте массу мариноваться на 1 час.", time: 60 },
+                    { desc: "Выкладывайте массу ложкой на сковороду и обжаривайте с каждой стороны под крышкой на среднем или маленьком огне до готовности.", time: 0 }
+                ]
             }
         ];
 
-        const DB_SCHEMA_VERSION = '2026-11-15-no-portions-v1';
+        const DB_SCHEMA_VERSION = '2026-11-17-no-portions-v2';
         const LEGACY_DEFAULT_IDS = [
             "1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
             "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21"
@@ -873,7 +880,6 @@
             if (countCartEl) countCartEl.innerText = unboughtCount > 0 ? `Купить: ${unboughtCount}` : 'Всё куплено';
         }
 
-        // --- Wake Lock (удержание экрана) ---
         async function requestWakeLock() {
             if (!('wakeLock' in navigator)) return false;
             try {
@@ -913,7 +919,6 @@
             }
         }
 
-        // --- Навигация ---
         function switchTab(tabId) {
             document.querySelectorAll('.container').forEach(c => c.classList.remove('active'));
             document.querySelectorAll('#main-nav button').forEach(b => b.classList.remove('active'));
@@ -937,7 +942,6 @@
             if (btn) switchTab(btn.dataset.tab);
         });
 
-        // --- Главный экран: плитки и вся база с фильтрацией ---
         document.querySelector('.home-tiles').addEventListener('click', (e) => {
             const tile = e.target.closest('.home-tile[data-go-tab]');
             if (tile) switchTab(tile.dataset.goTab);
@@ -1031,7 +1035,6 @@
             renderHome();
         });
 
-        // --- Поиск, сортировка и фильтрация в базе ---
         document.getElementById('search-input').addEventListener('input', renderRecipes);
         document.getElementById('sort-select').addEventListener('change', renderRecipes);
 
@@ -1196,7 +1199,6 @@
         document.getElementById('recipe-list').addEventListener('click', handleRecipeGridClick);
         document.getElementById('favorites-list').addEventListener('click', handleRecipeGridClick);
 
-        // --- Готовим сегодня ---
         function renderToday() {
             const list = document.getElementById('today-list');
             const summaryEl = document.getElementById('today-nutrition-summary');
@@ -1284,7 +1286,6 @@
             }
         });
 
-        // --- Корзина покупок ---
         function renderCart() {
             const content = document.getElementById('cart-content');
             const validToday = todayMenu.filter(item => recipes.some(r => String(r.id) === String(item.recipeId)));
@@ -1456,7 +1457,6 @@
             document.body.removeChild(ta);
         }
 
-        // --- Добавление и редактирование рецепта ---
         function appendIngredientRow(val = '') {
             const row = document.createElement('div');
             row.className = 'dynamic-list-item';
@@ -1582,7 +1582,6 @@
             }
         });
 
-        // --- Режим готовки и таймеры ---
         function startCooking(id) {
             const recipe = recipes.find(r => String(r.id) === String(id));
             if (!recipe) return;
@@ -1715,7 +1714,6 @@
             }
         });
 
-        // Звук таймера
         function unlockAudio() {
             try {
                 const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -1900,7 +1898,6 @@
             }
         });
 
-        // --- Резервное копирование и восстановление ---
         function downloadTextFile(filename, content, mimeType) {
             const blob = new Blob([content], { type: mimeType });
             const url = URL.createObjectURL(blob);
@@ -1927,15 +1924,63 @@
             }));
         }
 
-        function importFromRawString(raw) {
+        function parseRawRecipesInput(raw) {
             let cleaned = raw.trim();
-            if (!cleaned) return alert('Файл или текстовое поле пустое!');
+            if (!cleaned) return null;
 
             cleaned = cleaned.replace(/^(const|let|var)\s+defaultRecipes\s*=\s*/i, '');
             cleaned = cleaned.replace(/;\s*$/, '');
+            cleaned = cleaned.replace(/,\s*$/, '');
+
+            return JSON.parse(cleaned);
+        }
+
+        function appendRecipesFromRaw(raw) {
+            if (!raw.trim()) return alert('Вставь код рецепта в поле выше!');
 
             try {
-                const parsed = JSON.parse(cleaned);
+                const parsed = parseRawRecipesInput(raw);
+                let itemsToAdd = [];
+
+                if (Array.isArray(parsed)) {
+                    itemsToAdd = parsed;
+                } else if (parsed && typeof parsed === 'object' && Array.isArray(parsed.recipes)) {
+                    itemsToAdd = parsed.recipes;
+                } else if (parsed && typeof parsed === 'object' && parsed.name) {
+                    itemsToAdd = [parsed];
+                } else {
+                    alert('❌ Не удалось распознать рецепт. Проверь, что скопирован весь блок.');
+                    return;
+                }
+
+                const normalized = normalizeRecipesList(itemsToAdd);
+                let addedCount = 0;
+
+                normalized.forEach(item => {
+                    const existsIdx = recipes.findIndex(r => String(r.id) === String(item.id));
+                    if (existsIdx !== -1) {
+                        recipes[existsIdx] = item;
+                    } else {
+                        recipes.push(item);
+                    }
+                    deletedDefaultIds = deletedDefaultIds.filter(id => id !== String(item.id));
+                    addedCount++;
+                });
+
+                saveState();
+                renderAll();
+                document.getElementById('import-modal').classList.remove('open');
+                alert(`✅ Добавлено рецептов: ${addedCount}`);
+            } catch (e) {
+                alert('❌ Ошибка в формате кода. Проверь, что скопированы все скобки { ... }.');
+            }
+        }
+
+        function importFromRawString(raw) {
+            if (!raw.trim()) return alert('Файл или текстовое поле пустое!');
+
+            try {
+                const parsed = parseRawRecipesInput(raw);
 
                 if (Array.isArray(parsed)) {
                     if (recipes.length > 0 && !confirm(`Заменить текущую базу (${recipes.length} шт.) на загруженную (${parsed.length} шт.)?`)) {
@@ -1970,9 +2015,9 @@
                     return;
                 }
 
-                alert('❌ Неверный формат файла или кода.');
+                alert('❌ Для замены всей базы нужен файл бэкапа. Чтобы добавить один рецепт, нажми «➕ Добавить рецепт к базе».');
             } catch (e) {
-                alert('❌ Не удалось прочитать данные. Проверьте, что файл или код не повреждены.');
+                alert('❌ Не удалось прочитать данные. Проверь, что код не повреждён.');
             }
         }
 
@@ -1983,6 +2028,11 @@
 
         document.getElementById('btn-close-import').addEventListener('click', () => {
             document.getElementById('import-modal').classList.remove('open');
+        });
+
+        document.getElementById('btn-append-recipe').addEventListener('click', () => {
+            const raw = document.getElementById('import-textarea').value;
+            appendRecipesFromRaw(raw);
         });
 
         document.getElementById('btn-download-json').addEventListener('click', () => {
